@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import type { FilterState } from "@/components/enemy-faction/filters";
 
 interface CredentialsState {
   publicKey: string | undefined;
@@ -26,8 +27,10 @@ export const useCredentialsStore = create<CredentialsState>()(
 interface GlobalState {
   refetchInterval: number;
   enemyFactionId: number | undefined;
+  filters: FilterState;
   setRefetchInterval: (refetchInterval: number) => void;
   setEnemyFactionId: (enemyFactionId?: number) => void;
+  setFilters: (filters: FilterState) => void;
 }
 
 export const useGlobalStore = create<GlobalState>()(
@@ -35,9 +38,15 @@ export const useGlobalStore = create<GlobalState>()(
     (set) => ({
       refetchInterval: 10_000,
       enemyFactionId: undefined,
+      filters: {
+        onlineStatus: [],
+        state: [],
+        ff: [],
+      },
 
       setRefetchInterval: (refetchInterval: number) => set({ refetchInterval }),
       setEnemyFactionId: (enemyFactionId?: number) => set({ enemyFactionId }),
+      setFilters: (filters: FilterState) => set({ filters }),
     }),
     {
       name: "tornops-monitor",

@@ -1,8 +1,10 @@
 import { useFFScouterData } from "@/hooks/use-ffscouter";
 import { useEnemyFactionData, useUserData } from "@/hooks/use-torn";
+import { useGlobalStore } from "@/lib/stores";
 import type { Member } from "@/lib/faction";
 import { columns } from "./enemy-faction/columns";
 import { DataTable } from "./enemy-faction/data-table";
+import { Filters } from "./enemy-faction/filters";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "./ui/empty";
 
 // Helper function to get priority for sorting
@@ -84,6 +86,10 @@ export function EnemyFactionTable() {
   const { data: userData } = useUserData();
   const { data: enemyFactionData } = useEnemyFactionData();
 
+  // Filter state from store
+  const filters = useGlobalStore((state) => state.filters);
+  const setFilters = useGlobalStore((state) => state.setFilters);
+
   // Get user's location from status description when state is "Okay"
   const userLocation =
     userData?.status.state === "Okay" ? userData.status.description : undefined;
@@ -116,11 +122,14 @@ export function EnemyFactionTable() {
   }
 
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-4">
-        {enemyFactionData?.tag} - {enemyFactionData?.name} [
-        {enemyFactionData?.ID}] ({enemyFactionData?.capacity} members)
-      </h2>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <h2 className="text-xl font-bold">
+          {enemyFactionData?.tag} - {enemyFactionData?.name} [
+          {enemyFactionData?.ID}] ({enemyFactionData?.capacity} members)
+        </h2>
+        <Filters filters={filters} onFiltersChange={setFilters} />
+      </div>
       <DataTable
         columns={columns}
         data={sortedMembers.map((m) => {
