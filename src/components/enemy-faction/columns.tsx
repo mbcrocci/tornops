@@ -132,6 +132,10 @@ export const columns: ColumnDef<EnemyFactionMember>[] = [
     header: "Battle Stats",
     accessorKey: "battle_stats",
     cell: ({ row }) => {
+      if (!row.original.ffs?.bs_estimate_human) {
+        return <div>N/A</div>;
+      }
+
       return <div>{row.original.ffs?.bs_estimate_human}</div>;
     },
   },

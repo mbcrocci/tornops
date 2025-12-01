@@ -124,7 +124,7 @@ export function EnemyFactionTable() {
       <DataTable
         columns={columns}
         data={sortedMembers.map((m) => {
-          const ffs = ffScouterData?.find((f) => f.player_id === m.id);
+          const ffs = (ffScouterData ?? []).find((f) => f.player_id === m.id);
           return {
             ...m,
             ffs,
