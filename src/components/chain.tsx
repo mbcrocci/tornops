@@ -1,15 +1,9 @@
 import { useEnemyFactionChain, useUserFactionChain } from "@/hooks/use-torn";
 import type { FactionChain } from "@/lib/faction";
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardHeader } from "./ui/card";
 import { Progress } from "./ui/progress";
-
-import { ChevronDown } from "lucide-react";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "./ui/collapsible";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 
 // Helper function to format time duration
 function formatTime(seconds: number): string {
@@ -27,37 +21,50 @@ function formatTime(seconds: number): string {
   return parts.join(" ");
 }
 
-export function UserChain({ defaultOpen = true }: { defaultOpen?: boolean }) {
+export function UserChain() {
   const { data: userFactionChain } = useUserFactionChain();
   if (!userFactionChain) return null;
 
-  return <Chain chain={userFactionChain?.chain} defaultOpen={defaultOpen} />;
+  return <Chain chain={userFactionChain?.chain} />;
 }
 
-export function EnemyChain({ defaultOpen = true }: { defaultOpen?: boolean }) {
+export function EnemyChain() {
   const { data: enemyFactionChain } = useEnemyFactionChain();
   if (!enemyFactionChain) return null;
 
-  return (
-    <Chain
-      title="Enemy Chain"
-      chain={enemyFactionChain.chain}
-      defaultOpen={defaultOpen}
-    />
-  );
+  return <Chain chain={enemyFactionChain.chain} />;
 }
 
-function Chain({
-  title,
-  chain,
-  defaultOpen = true,
-}: {
-  title?: string;
-  chain: FactionChain;
-  defaultOpen?: boolean;
-}) {
+export function Chains() {
+  return (
+    <Card className="w-full px-4 flex flex-col">
+      <Tabs defaultValue="user" className="flex flex-col flex-1">
+        <CardHeader>
+          <TabsList>
+            <TabsTrigger value="user">User Chain</TabsTrigger>
+            <TabsTrigger value="enemy">Enemy Chain</TabsTrigger>
+          </TabsList>
+        </CardHeader>
+        <CardContent className="flex flex-col flex-1 justify-center min-h-0">
+          <TabsContent
+            value="user"
+            className="mt-0 flex-1 flex items-center justify-center"
+          >
+            <UserChain />
+          </TabsContent>
+          <TabsContent
+            value="enemy"
+            className="mt-0 flex-1 flex items-center justify-center"
+          >
+            <EnemyChain />
+          </TabsContent>
+        </CardContent>
+      </Tabs>
+    </Card>
+  );
+}
+function Chain({ chain }: { chain: FactionChain }) {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
-  const [isOpen, setIsOpen] = useState(defaultOpen);
 
   useEffect(() => {
     if (!chain?.timeout) {
@@ -77,81 +84,36 @@ function Chain({
   }, [chain?.timeout]);
 
   if (!chain) {
-    return (
-      <Card>
-        <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-          <div className="flex items-center justify-between">
-            <CardTitle>{title || "Chain"}</CardTitle>
-            <ChevronDown
-              className={`h-4 w-4 transition-transform ${
-                isOpen ? "transform rotate-180" : ""
-              }`}
-            />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="text-muted-foreground">No chain data available</div>
-        </CardContent>
-      </Card>
-    );
+    return <div className="text-muted-foreground">No chain data available</div>;
   }
 
   const chainPercentage = chain.max > 0 ? (chain.current / chain.max) * 100 : 0;
 
   return (
-    <Collapsible
-      open={isOpen}
-      onOpenChange={setIsOpen}
-      className="w-full h-full"
-    >
-      <Card className="w-full">
-        <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-          <div className="flex items-center justify-between">
-            <CardTitle>{title || "Chain"}</CardTitle>
-            <CollapsibleTrigger asChild>
-              <ChevronDown
-                className={`h-4 w-4 transition-transform ${
-                  isOpen ? "transform rotate-180" : ""
-                }`}
-              />
-            </CollapsibleTrigger>
+    <div className="space-y-4 w-full">
+      {/* Countdown Timer */}
+      <div className="text-center">
+        <div className="text-sm font-medium">Time Remaining</div>
+        <div className="text-4xl font-bold">{formatTime(timeRemaining)}</div>
+        {timeRemaining <= 0 && (
+          <div className="text-sm text-muted-foreground mt-1">
+            Chain has expired
           </div>
-        </CardHeader>
-        <CardContent className="">
-          <CollapsibleContent className="w-full h-full">
-            <div className="space-y-4">
-              {/* Countdown Timer */}
-              <div className="text-center">
-                <div className="text-sm font-medium">Time Remaining</div>
-                <div className="text-4xl font-bold">
-                  {formatTime(timeRemaining)}
-                </div>
-                {timeRemaining <= 0 && (
-                  <div className="text-sm text-muted-foreground mt-1">
-                    Chain has expired
-                  </div>
-                )}
-              </div>
-              {/* Chain Count */}
-              <div>
-                <Progress value={chainPercentage} className="h-6" />
-                <div className="flex justify-between">
-                  <div className="text-sm text-muted-foreground mt-1">
-                    {chain.current.toLocaleString()} /{" "}
-                    {chain.max.toLocaleString()}
-                  </div>
+        )}
+      </div>
+      {/* Chain Count */}
+      <div>
+        <Progress value={chainPercentage} className="h-6" />
+        <div className="flex justify-between">
+          <div className="text-sm text-muted-foreground mt-1">
+            {chain.current.toLocaleString()} / {chain.max.toLocaleString()}
+          </div>
 
-                  <div className="text-sm text-muted-foreground mt-1">
-                    {chain.modifier > 0 && (
-                      <div>Modifier: {chain.modifier}x</div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CollapsibleContent>
-        </CardContent>
-      </Card>
-    </Collapsible>
+          <div className="text-sm text-muted-foreground mt-1">
+            {chain.modifier > 0 && <div>Modifier: {chain.modifier}x</div>}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
