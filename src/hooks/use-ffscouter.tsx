@@ -1,8 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useCredentialsStore, useGlobalStore } from "@/lib/stores";
 
-export const FFSCOUTER_API_KEY = "CJJfNJkBgoyMFouX";
-
 export type FFScouterData = {
   player_id: number;
   fair_fight: number;

@@ -3,9 +3,6 @@ import type { Faction, FactionChain } from "@/lib/faction";
 import { useCredentialsStore, useGlobalStore } from "@/lib/stores";
 import type { User } from "@/lib/user";
 
-export const TEST_KEY = "LLHrCIqC3Tfp0yJc";
-export const TEST_ENEMY_FACTION_ID = 46144;
-
 const getUserData = async (key: string) => {
   if (!key) {
     throw new Error("No key provided");
