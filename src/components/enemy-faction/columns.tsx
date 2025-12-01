@@ -1,11 +1,11 @@
-import type { Member } from "@/lib/faction";
-import { playerAttackLink, playerProfileLink } from "@/lib/links";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Eye, Swords } from "lucide-react";
-import { HospitalCountdown } from "../hospital-countdown";
-import { cleanStatusDescription, getStatusBgColorClass } from "@/lib/status";
-import { buttonVariants } from "../ui/button";
 import type { FFScouterData } from "@/hooks/use-ffscouter";
+import type { Member } from "@/lib/faction";
+import { playerAttackLink, playerProfileLink } from "@/lib/links";
+import { cleanStatusDescription, getStatusBgColorClass } from "@/lib/status";
+import { HospitalCountdown } from "../hospital-countdown";
+import { buttonVariants } from "../ui/button";
 
 export type EnemyFactionMember = Member & {
   id: number;

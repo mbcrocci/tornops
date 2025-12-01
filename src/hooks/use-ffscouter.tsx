@@ -1,5 +1,5 @@
-import { useCredentialsStore, useGlobalStore } from "@/lib/stores";
 import { useQuery } from "@tanstack/react-query";
+import { useCredentialsStore, useGlobalStore } from "@/lib/stores";
 
 export const FFSCOUTER_API_KEY = "CJJfNJkBgoyMFouX";
 
