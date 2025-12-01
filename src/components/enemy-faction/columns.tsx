@@ -113,7 +113,7 @@ export const columns: ColumnDef<EnemyFactionMember>[] = [
     header: "FF",
     accessorKey: "ff",
     cell: ({ row }) => {
-      if (!row.original.ffs) {
+      if (!row.original.ffs?.fair_fight) {
         return <div>N/A</div>;
       }
 

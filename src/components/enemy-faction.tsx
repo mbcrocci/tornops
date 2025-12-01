@@ -1,13 +1,7 @@
-import {
-  TEST_ENEMY_FACTION_ID,
-  TEST_KEY,
-  useEnemyFactionData,
-  useUserData,
-} from "@/hooks/use-torn";
+import { useEnemyFactionData, useUserData } from "@/hooks/use-torn";
 import type { Member } from "@/lib/faction";
 
 import { FFSCOUTER_API_KEY, useFFScouterData } from "@/hooks/use-ffscouter";
-import { useEffect } from "react";
 import { columns } from "./enemy-faction/columns";
 import { DataTable } from "./enemy-faction/data-table";
 
@@ -87,12 +81,8 @@ function sortPlayers(
 }
 
 export function EnemyFactionTable() {
-  const { data: userData } = useUserData(TEST_KEY);
-
-  const { data: enemyFactionData } = useEnemyFactionData(
-    TEST_ENEMY_FACTION_ID,
-    TEST_KEY
-  );
+  const { data: userData } = useUserData();
+  const { data: enemyFactionData } = useEnemyFactionData();
 
   // Get user's location from status description when state is "Okay"
   const userLocation =

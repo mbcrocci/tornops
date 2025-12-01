@@ -2,8 +2,8 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
 interface CredentialsState {
-  publicKey: string;
-  ffscouterKey: string;
+  publicKey: string | undefined;
+  ffscouterKey: string | undefined;
   setPublicKey: (publicKey: string) => void;
   setFFScouterKey: (ffscouterKey: string) => void;
 }
@@ -11,13 +11,13 @@ interface CredentialsState {
 export const useCredentialsStore = create<CredentialsState>()(
   persist(
     (set) => ({
-      publicKey: "LLHrCIqC3Tfp0yJc", // TODO: make this use inputable
-      ffscouterKey: "CJJfNJkBgoyMFouX", // TODO: make this use inputable
+      publicKey: undefined, // TODO: make this use inputable
+      ffscouterKey: undefined, // TODO: make this use inputable
       setPublicKey: (publicKey: string) => set({ publicKey }),
       setFFScouterKey: (ffscouterKey: string) => set({ ffscouterKey }),
     }),
     {
-      name: "credentials",
+      name: "tornops-credentials",
       storage: createJSONStorage(() => localStorage),
     }
   )
@@ -25,7 +25,7 @@ export const useCredentialsStore = create<CredentialsState>()(
 
 interface GlobalState {
   refetchInterval: number;
-  enemyFactionId: number;
+  enemyFactionId: number | undefined;
   setRefetchInterval: (refetchInterval: number) => void;
   setEnemyFactionId: (enemyFactionId: number) => void;
 }
@@ -34,13 +34,13 @@ export const useGlobalStore = create<GlobalState>()(
   persist(
     (set) => ({
       refetchInterval: 10_000,
-      enemyFactionId: 0,
+      enemyFactionId: undefined,
 
       setRefetchInterval: (refetchInterval: number) => set({ refetchInterval }),
       setEnemyFactionId: (enemyFactionId: number) => set({ enemyFactionId }),
     }),
     {
-      name: "monitor",
+      name: "tornops-monitor",
       storage: createJSONStorage(() => localStorage),
     }
   )

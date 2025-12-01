@@ -7,6 +7,10 @@ export const TEST_KEY = "LLHrCIqC3Tfp0yJc";
 export const TEST_ENEMY_FACTION_ID = 46144;
 
 const getUserData = async (key: string) => {
+  if (!key) {
+    throw new Error("No key provided");
+  }
+
   const url = "https://api.torn.com/user/";
   const params = new URLSearchParams();
   params.set("selections", "profile,cooldowns");
@@ -57,7 +61,7 @@ const getEnemyFactionChain = async (enemyFactionId: number, key: string) => {
 };
 
 export const useUserData = () => {
-  const key = useCredentialsStore((state) => state.publicKey);
+  const key = useCredentialsStore((state) => state.publicKey ?? "");
   const refetchInterval = useGlobalStore((state) => state.refetchInterval);
 
   return useQuery({
@@ -68,7 +72,7 @@ export const useUserData = () => {
 };
 
 export const useUserFaction = () => {
-  const key = useCredentialsStore((state) => state.publicKey);
+  const key = useCredentialsStore((state) => state.publicKey ?? "");
   const refetchInterval = useGlobalStore((state) => state.refetchInterval);
   const setEnemyFactionId = useGlobalStore((state) => state.setEnemyFactionId);
 
@@ -91,9 +95,9 @@ export const useUserFaction = () => {
 };
 
 export const useEnemyFactionData = () => {
-  const publicKey = useCredentialsStore((state) => state.publicKey);
+  const publicKey = useCredentialsStore((state) => state.publicKey ?? "");
   const refetchInterval = useGlobalStore((state) => state.refetchInterval);
-  const enemyFactionId = useGlobalStore((state) => state.enemyFactionId);
+  const enemyFactionId = useGlobalStore((state) => state.enemyFactionId ?? 0);
 
   return useQuery({
     queryKey: ["enemy-faction-data", enemyFactionId],
@@ -103,7 +107,7 @@ export const useEnemyFactionData = () => {
 };
 
 export const useUserFactionChain = () => {
-  const key = useCredentialsStore((state) => state.publicKey);
+  const key = useCredentialsStore((state) => state.publicKey ?? "");
   const refetchInterval = useGlobalStore((state) => state.refetchInterval);
 
   return useQuery({
@@ -114,8 +118,8 @@ export const useUserFactionChain = () => {
 };
 
 export const useEnemyFactionChain = () => {
-  const key = useCredentialsStore((state) => state.publicKey);
-  const enemyFactionId = useGlobalStore((state) => state.enemyFactionId);
+  const key = useCredentialsStore((state) => state.publicKey ?? "");
+  const enemyFactionId = useGlobalStore((state) => state.enemyFactionId ?? 0);
   const refetchInterval = useGlobalStore((state) => state.refetchInterval);
 
   return useQuery({
