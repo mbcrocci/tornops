@@ -1,7 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo } from "react";
 import type { Faction, FactionChain } from "@/lib/faction";
-import { useCredentialsStore, useGlobalStore } from "@/lib/stores";
+import {
+  type EnemyMember,
+  useCredentialsStore,
+  useGlobalStore,
+} from "@/lib/stores";
 import type { User } from "@/lib/user";
+import { useFFScouterData } from "./use-ffscouter";
 
 const getUserData = async (key: string) => {
   if (!key) {
@@ -128,4 +134,54 @@ export const useEnemyFactionChain = () => {
     queryFn: () => getEnemyFactionChain(enemyFactionId, key),
     refetchInterval: refetchInterval,
   });
+};
+
+/**
+ * Hook that fetches enemy faction data, enriches members with FFScouter data,
+ * and stores them in the global store.
+ */
+export const useEnemyMembers = () => {
+  const { data: enemyFactionData } = useEnemyFactionData();
+  const setEnemyMembers = useGlobalStore((state) => state.setEnemyMembers);
+  const setEnemyFaction = useGlobalStore((state) => state.setEnemyFaction);
+
+  // Convert members object to array with IDs
+  const members = useMemo(() => {
+    if (!enemyFactionData?.members) return [];
+    return Object.entries(enemyFactionData.members).map(([id, member]) => ({
+      ...member,
+      id: parseInt(id, 10),
+    }));
+  }, [enemyFactionData?.members]);
+
+  // Get FF scouter data for all members
+  const memberIds = useMemo(
+    () => members.map((member) => member.id),
+    [members]
+  );
+  const { data: ffScouterData } = useFFScouterData(memberIds);
+
+  useEffect(() => {
+    if (enemyFactionData) {
+      setEnemyFaction({
+        id: enemyFactionData.ID,
+        name: enemyFactionData.name,
+        tag: enemyFactionData.tag,
+        capacity: enemyFactionData.capacity,
+      });
+    }
+  }, [enemyFactionData, setEnemyFaction]);
+
+  // Enrich members with FF scouter data and store in global store
+  useEffect(() => {
+    if (members.length > 0 && ffScouterData) {
+      const enrichedMembers: EnemyMember[] = members.map((member) => {
+        const ffs = ffScouterData.find((f) => f.player_id === member.id);
+        return { ...member, ffs };
+      });
+      setEnemyMembers(enrichedMembers);
+    } else {
+      setEnemyMembers(members);
+    }
+  }, [members, ffScouterData, setEnemyMembers]);
 };

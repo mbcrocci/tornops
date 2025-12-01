@@ -1,7 +1,6 @@
-import { useFFScouterData } from "@/hooks/use-ffscouter";
-import { useEnemyFactionData, useUserData } from "@/hooks/use-torn";
-import { useGlobalStore } from "@/lib/stores";
+import { useEnemyMembers, useUserData } from "@/hooks/use-torn";
 import type { Member } from "@/lib/faction";
+import { type EnemyMember, useGlobalStore } from "@/lib/stores";
 import { columns } from "./enemy-faction/columns";
 import { DataTable } from "./enemy-faction/data-table";
 import { Filters } from "./enemy-faction/filters";
@@ -54,15 +53,56 @@ function getPlayerPriority(
   return 99;
 }
 
-type MemberWithId = Member & {
-  id: number;
-};
+// Filtering function
+function filterMembers(
+  members: EnemyMember[],
+  filters: {
+    onlineStatus: string[];
+    state: string[];
+    ff: string[];
+  }
+): EnemyMember[] {
+  return members.filter((member) => {
+    // Filter by online status
+    if (filters.onlineStatus.length > 0) {
+      if (!filters.onlineStatus.includes(member.last_action.status)) {
+        return false;
+      }
+    }
+
+    // Filter by state
+    if (filters.state.length > 0) {
+      if (!filters.state.includes(member.status.state)) {
+        return false;
+      }
+    }
+
+    // Filter by fair fight
+    if (filters.ff.length > 0) {
+      const fairFight = member.ffs?.fair_fight;
+      if (fairFight === undefined) {
+        return false;
+      }
+
+      const matchesFF = filters.ff.some((ffFilter) => {
+        const threshold = parseFloat(ffFilter.replace("<", ""));
+        return fairFight < threshold;
+      });
+
+      if (!matchesFF) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+}
 
 // Sorting function
 function sortPlayers(
-  members: MemberWithId[],
+  members: EnemyMember[],
   userLocation: string | undefined
-): MemberWithId[] {
+): EnemyMember[] {
   return [...members].sort((a, b) => {
     const priorityA = getPlayerPriority(a, userLocation);
     const priorityB = getPlayerPriority(b, userLocation);
@@ -84,30 +124,27 @@ function sortPlayers(
 
 export function EnemyFactionTable() {
   const { data: userData } = useUserData();
-  const { data: enemyFactionData } = useEnemyFactionData();
 
-  // Filter state from store
+  // Hook to fetch and store enriched enemy members
+  useEnemyMembers();
+
+  // Read from store
   const filters = useGlobalStore((state) => state.filters);
   const setFilters = useGlobalStore((state) => state.setFilters);
+  const enemyMembers = useGlobalStore((state) => state.enemyMembers);
+  const enemyFaction = useGlobalStore((state) => state.enemyFaction);
 
   // Get user's location from status description when state is "Okay"
   const userLocation =
     userData?.status.state === "Okay" ? userData.status.description : undefined;
 
-  // Convert members object to array and sort
-  const members: MemberWithId[] = enemyFactionData?.members
-    ? Object.entries(enemyFactionData.members).map(([id, member]) => ({
-        ...member,
-        id: parseInt(id, 10),
-      }))
-    : [];
-  const sortedMembers = sortPlayers(members, userLocation);
+  // Apply filters
+  const filteredMembers = filterMembers(enemyMembers, filters);
 
-  const { data: ffScouterData } = useFFScouterData(
-    sortedMembers.map((member) => member.id)
-  );
+  // Sort filtered members
+  const sortedMembers = sortPlayers(filteredMembers, userLocation);
 
-  if (!enemyFactionData) {
+  if (!enemyMembers.length) {
     return (
       <Empty className="">
         <EmptyHeader className="min-w-lg">
@@ -125,21 +162,12 @@ export function EnemyFactionTable() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <h2 className="text-xl font-bold">
-          {enemyFactionData?.tag} - {enemyFactionData?.name} [
-          {enemyFactionData?.ID}] ({enemyFactionData?.capacity} members)
+          {enemyFaction?.tag} - {enemyFaction?.name} [{enemyFaction?.id}] (
+          {enemyFaction?.capacity} members)
         </h2>
         <Filters filters={filters} onFiltersChange={setFilters} />
       </div>
-      <DataTable
-        columns={columns}
-        data={sortedMembers.map((m) => {
-          const ffs = (ffScouterData ?? []).find((f) => f.player_id === m.id);
-          return {
-            ...m,
-            ffs,
-          };
-        })}
-      />
+      <DataTable columns={columns} data={sortedMembers} />
     </div>
   );
 }
