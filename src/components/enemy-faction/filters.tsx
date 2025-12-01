@@ -1,13 +1,8 @@
-import { ChevronDown } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@/components/ui/toggle-group";
+import { Label } from "@/components/ui/label";
 
 export type OnlineStatusFilter = "Online" | "Idle" | "Offline";
 export type StateFilter = "Okay" | "Hospital" | "Abroad" | "Traveling";
@@ -24,120 +19,78 @@ interface FiltersProps {
   onFiltersChange: (filters: FilterState) => void;
 }
 
-function FilterDropdown<T extends string>({
+function FilterToggleGroup<T extends string>({
   label,
   options,
   selected,
-  onSelectionChange,
+  onValueChange,
 }: {
   label: string;
   options: T[];
   selected: T[];
-  onSelectionChange: (option: T, checked: boolean) => void;
+  onValueChange: (value: string[]) => void;
 }) {
-  const hasSelection = selected.length > 0;
-
-  // Format the button text to show selections
-  const getButtonText = () => {
-    if (!hasSelection) {
-      return label;
-    }
-
-    // Show all selected items, comma-separated
-    const selectedText = selected.join(", ");
-    return `${label}: ${selectedText}`;
-  };
-
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className={cn("h-9 px-3 text-sm", hasSelection && "bg-accent")}
-        >
-          {getButtonText()}
-          <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-56 p-3" align="start">
-        <div className="space-y-3">
-          <Label className="text-sm font-semibold">{label}</Label>
-          <div className="space-y-2">
-            {options.map((option) => (
-              <div key={option} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`${label}-${option}`}
-                  checked={selected.includes(option)}
-                  onCheckedChange={(checked) =>
-                    onSelectionChange(option, checked === true)
-                  }
-                />
-                <Label
-                  htmlFor={`${label}-${option}`}
-                  className="text-sm font-normal cursor-pointer flex-1"
-                >
-                  {option}
-                </Label>
-              </div>
-            ))}
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
+    <div className="flex flex-col gap-2">
+      <Label className="text-sm font-semibold">{label}</Label>
+      <ToggleGroup
+        type="multiple"
+        value={selected}
+        onValueChange={(value) => onValueChange(value as T[])}
+        variant="outline"
+        size="default"
+      >
+        {options.map((option) => (
+          <ToggleGroupItem key={option} value={option} aria-label={option}>
+            {option}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+    </div>
   );
 }
 
 export function Filters({ filters, onFiltersChange }: FiltersProps) {
-  const handleOnlineStatusChange = (
-    status: OnlineStatusFilter,
-    checked: boolean
-  ) => {
-    const newFilters = {
+  const handleOnlineStatusChange = (value: string[]) => {
+    onFiltersChange({
       ...filters,
-      onlineStatus: checked
-        ? [...filters.onlineStatus, status]
-        : filters.onlineStatus.filter((s) => s !== status),
-    };
-    onFiltersChange(newFilters);
+      onlineStatus: value as OnlineStatusFilter[],
+    });
   };
 
-  const handleStateChange = (state: StateFilter, checked: boolean) => {
-    const newFilters = {
+  const handleStateChange = (value: string[]) => {
+    onFiltersChange({
       ...filters,
-      state: checked
-        ? [...filters.state, state]
-        : filters.state.filter((s) => s !== state),
-    };
-    onFiltersChange(newFilters);
+      state: value as StateFilter[],
+    });
   };
 
-  const handleFFChange = (ff: FFFilter, checked: boolean) => {
-    const newFilters = {
+  const handleFFChange = (value: string[]) => {
+    onFiltersChange({
       ...filters,
-      ff: checked ? [...filters.ff, ff] : filters.ff.filter((f) => f !== ff),
-    };
-    onFiltersChange(newFilters);
+      ff: value as FFFilter[],
+    });
   };
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <FilterDropdown
+    <div className="flex items-start gap-4 flex-wrap">
+      <FilterToggleGroup
         label="Online Status"
         options={["Online", "Idle", "Offline"] as OnlineStatusFilter[]}
         selected={filters.onlineStatus}
-        onSelectionChange={handleOnlineStatusChange}
+        onValueChange={handleOnlineStatusChange}
       />
-      <FilterDropdown
+      <FilterToggleGroup
         label="State"
         options={["Okay", "Hospital", "Abroad", "Traveling"] as StateFilter[]}
         selected={filters.state}
-        onSelectionChange={handleStateChange}
+        onValueChange={handleStateChange}
       />
-      <FilterDropdown
+      <FilterToggleGroup
         label="Fair Fight"
         options={["<2", "<4", "<6"] as FFFilter[]}
         selected={filters.ff}
-        onSelectionChange={handleFFChange}
+        onValueChange={handleFFChange}
       />
     </div>
   );
