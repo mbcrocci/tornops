@@ -14,7 +14,6 @@ import {
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
-  InputGroupText,
 } from "./ui/input-group";
 import { Label } from "./ui/label";
 
