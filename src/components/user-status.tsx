@@ -1,7 +1,8 @@
-import { TEST_KEY, useUserData, useUserFactionChain } from "@/hooks/use-torn";
-import { buttonVariants } from "./ui/button";
+import { useUserData, useUserFactionChain } from "@/hooks/use-torn";
 import { factionArmoryLink, inventoryLink } from "@/lib/links";
-import { Progress } from "./ui/progress";
+import { getStatusBgColorClass } from "@/lib/status";
+import { useEffect } from "react";
+import { buttonVariants } from "./ui/button";
 import {
   Card,
   CardContent,
@@ -9,8 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card";
-import { useEffect } from "react";
-import { getStatusBgColorClass } from "@/lib/status";
+import { Progress } from "./ui/progress";
+import { cn } from "@/lib/utils";
 
 // Helper function to format time duration
 function formatDuration(seconds: number): string {
@@ -77,41 +78,42 @@ export function UserStatus() {
             </div>
           </div>
         </div>
-
-        {/* Health */}
-        <div>
-          <div className="text-sm font-medium mb-2">Health:</div>
-          <Progress value={healthPercentage} className="h-6" />
-          <div className="text-sm text-muted-foreground">
-            {userData.life.current.toLocaleString()} /{" "}
-            {userData.life.maximum.toLocaleString()} (
-            {healthPercentage.toFixed(1)}%)
+        <div className="flex flex-row gap-2 w-full">
+          {/* Health */}
+          <div className="w-1/2">
+            <div className="text-sm font-medium mb-2">Health:</div>
+            <Progress value={healthPercentage} className="h-6" />
+            <div className="text-sm text-muted-foreground">
+              {userData.life.current.toLocaleString()} /{" "}
+              {userData.life.maximum.toLocaleString()} (
+              {healthPercentage.toFixed(1)}%)
+            </div>
           </div>
-        </div>
 
-        {/* Medical Cooldown */}
-        <div>
-          <div className="text-sm font-medium mb-2">Medical Cooldown:</div>
-          {/* <div className="w-full h-6 bg-muted outline-input rounded-full overflow-hidden mb-1">
+          {/* Medical Cooldown */}
+          <div className="w-1/2">
+            <div className="text-sm font-medium mb-2">Medical Cooldown:</div>
+            {/* <div className="w-full h-6 bg-muted outline-input rounded-full overflow-hidden mb-1">
                 <div
                   className="h-full rounded-full bg-primary transition-all"
                   style={{ width: `${medicalCooldownPercentage}%` }}
                 />
               </div> */}
-          <Progress value={medicalCooldownPercentage} className="h-6" />
-          <div className="text-sm text-muted-foreground">
-            {formatDuration(medicalCooldownElapsed)} /{" "}
-            {formatDuration(medicalCooldownTotal)} (
-            {medicalCooldownPercentage.toFixed(1)}%)
+            <Progress value={medicalCooldownPercentage} className="h-6" />
+            <div className="text-sm text-muted-foreground">
+              {formatDuration(medicalCooldownElapsed)} /{" "}
+              {formatDuration(medicalCooldownTotal)} (
+              {medicalCooldownPercentage.toFixed(1)}%)
+            </div>
           </div>
         </div>
       </CardContent>
-      <CardFooter className="flex gap-4 items-center justify-center">
+      <CardFooter className="flex gap-4 items-center justify-center px-8">
         <a
           href={factionArmoryLink()}
           target="_blank"
           rel="noopener noreferrer"
-          className={buttonVariants({ variant: "default" })}
+          className={cn(buttonVariants({ variant: "default" }), "w-1/2")}
         >
           Faction Armory
         </a>
@@ -119,7 +121,7 @@ export function UserStatus() {
           href={inventoryLink()}
           target="_blank"
           rel="noopener noreferrer"
-          className={buttonVariants({ variant: "default" })}
+          className={cn(buttonVariants({ variant: "default" }), "w-1/2")}
         >
           Inventory
         </a>
