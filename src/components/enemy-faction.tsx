@@ -4,6 +4,7 @@ import { type EnemyMember, useGlobalStore } from "@/lib/stores";
 import { columns } from "./enemy-faction/columns";
 import { DataTable } from "./enemy-faction/data-table";
 import { Filters } from "./enemy-faction/filters";
+import { RefreshCountdown } from "./refresh-countdown";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "./ui/empty";
 
 // Helper function to get priority for sorting
@@ -161,10 +162,13 @@ export function EnemyFactionTable() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <h2 className="text-xl font-bold">
-          {enemyFaction?.tag} - {enemyFaction?.name} [{enemyFaction?.id}] (
-          {enemyFaction?.capacity} members)
-        </h2>
+        <div>
+          <h2 className="text-xl font-bold">
+            {enemyFaction?.tag} - {enemyFaction?.name} [{enemyFaction?.id}] (
+            {enemyFaction?.capacity} members)
+          </h2>
+          <RefreshCountdown />
+        </div>
         <Filters filters={filters} onFiltersChange={setFilters} />
       </div>
       <DataTable columns={columns} data={sortedMembers} />

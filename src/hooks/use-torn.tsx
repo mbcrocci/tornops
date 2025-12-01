@@ -141,9 +141,12 @@ export const useEnemyFactionChain = () => {
  * and stores them in the global store.
  */
 export const useEnemyMembers = () => {
-  const { data: enemyFactionData } = useEnemyFactionData();
+  const { data: enemyFactionData, dataUpdatedAt } = useEnemyFactionData();
   const setEnemyMembers = useGlobalStore((state) => state.setEnemyMembers);
   const setEnemyFaction = useGlobalStore((state) => state.setEnemyFaction);
+  const setLastRefreshTime = useGlobalStore(
+    (state) => state.setLastRefreshTime
+  );
 
   // Convert members object to array with IDs
   const members = useMemo(() => {
@@ -169,8 +172,10 @@ export const useEnemyMembers = () => {
         tag: enemyFactionData.tag,
         capacity: enemyFactionData.capacity,
       });
+      // Update refresh time when data is fetched
+      setLastRefreshTime(dataUpdatedAt);
     }
-  }, [enemyFactionData, setEnemyFaction]);
+  }, [enemyFactionData, dataUpdatedAt, setEnemyFaction, setLastRefreshTime]);
 
   // Enrich members with FF scouter data and store in global store
   useEffect(() => {

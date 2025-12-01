@@ -1,8 +1,8 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type { FilterState } from "@/components/enemy-faction/filters";
-import type { Member } from "@/lib/faction";
 import type { FFScouterData } from "@/hooks/use-ffscouter";
+import type { Member } from "@/lib/faction";
 
 interface CredentialsState {
   publicKey: string | undefined;
@@ -47,11 +47,13 @@ interface GlobalState {
   enemyFaction?: EnemyFaction;
   filters: FilterState;
   enemyMembers: EnemyMember[];
+  lastRefreshTime: number | undefined;
   setRefetchInterval: (refetchInterval: number) => void;
   setEnemyFactionId: (enemyFactionId?: number) => void;
   setEnemyFaction: (enemyFaction?: EnemyFaction) => void;
   setFilters: (filters: FilterState) => void;
   setEnemyMembers: (members: EnemyMember[]) => void;
+  setLastRefreshTime: (timestamp: number) => void;
 }
 
 export const useGlobalStore = create<GlobalState>()(
@@ -66,6 +68,7 @@ export const useGlobalStore = create<GlobalState>()(
       enemyFactionId: undefined,
       enemyFaction: undefined,
       enemyMembers: [],
+      lastRefreshTime: undefined,
 
       setRefetchInterval: (refetchInterval: number) => set({ refetchInterval }),
       setEnemyFactionId: (enemyFactionId?: number) => set({ enemyFactionId }),
@@ -73,6 +76,8 @@ export const useGlobalStore = create<GlobalState>()(
       setFilters: (filters: FilterState) => set({ filters }),
       setEnemyMembers: (members: EnemyMember[]) =>
         set({ enemyMembers: members }),
+      setLastRefreshTime: (timestamp: number) =>
+        set({ lastRefreshTime: timestamp }),
     }),
     {
       name: "tornops-monitor",
