@@ -16,6 +16,7 @@ import {
   InputGroupInput,
   InputGroupText,
 } from "./ui/input-group";
+import { Label } from "./ui/label";
 
 export function CredentialsCard() {
   return (
@@ -146,81 +147,89 @@ export function CredentialsInput() {
 
   return (
     <div className="flex flex-col gap-2">
-      <InputGroup
-        aria-invalid={tornValidation === "invalid"}
-        className={
-          tornValidation === "valid"
-            ? "border-green-600 dark:border-green-400"
-            : ""
-        }
-      >
-        <InputGroupInput
-          type="text"
-          placeholder="Your Torn Public Key"
-          value={formatDisplayValue(publicKeyInput, showTornKey)}
-          onChange={handleTornKeyChange}
-        />
-        <InputGroupAddon align="inline-end">
-          {getValidationIcon(tornValidation)}
-          <InputGroupButton
-            onClick={() => setShowTornKey(!showTornKey)}
-            type="button"
-            aria-label={showTornKey ? "Hide key" : "Show key"}
-          >
-            {showTornKey ? (
-              <EyeOff className="size-3.5" />
-            ) : (
-              <Eye className="size-3.5" />
-            )}
-          </InputGroupButton>
-          <InputGroupButton
-            onClick={handleValidateTorn}
-            disabled={!publicKeyInput || tornValidation === "validating"}
-          >
-            Validate
-          </InputGroupButton>
-        </InputGroupAddon>
-      </InputGroup>
-      <InputGroup
-        aria-invalid={ffscouterValidation === "invalid"}
-        className={
-          ffscouterValidation === "valid"
-            ? "border-green-600 dark:border-green-400"
-            : ""
-        }
-      >
-        <InputGroupAddon>
-          <InputGroupText>optional</InputGroupText>
-        </InputGroupAddon>
-        <InputGroupInput
-          type="text"
-          placeholder="Your FFScouter API Key"
-          value={formatDisplayValue(ffscouterKeyInput, showFFScouterKey)}
-          onChange={handleFFScouterKeyChange}
-        />
-        <InputGroupAddon align="inline-end">
-          {getValidationIcon(ffscouterValidation)}
-          <InputGroupButton
-            onClick={() => setShowFFScouterKey(!showFFScouterKey)}
-            type="button"
-            aria-label={showFFScouterKey ? "Hide key" : "Show key"}
-          >
-            {showFFScouterKey ? (
-              <EyeOff className="size-3.5" />
-            ) : (
-              <Eye className="size-3.5" />
-            )}
-          </InputGroupButton>
-          <InputGroupButton
-            onClick={handleValidateFFScouter}
-            disabled={
-              !ffscouterKeyInput || ffscouterValidation === "validating"
-            }
-          >
-            Validate
-          </InputGroupButton>
-        </InputGroupAddon>
-      </InputGroup>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="torn-key">Torn Public Key</Label>
+        <InputGroup
+          aria-invalid={tornValidation === "invalid"}
+          className={
+            tornValidation === "valid"
+              ? "border-green-600 dark:border-green-400"
+              : ""
+          }
+        >
+          <InputGroupInput
+            id="torn-key"
+            type="text"
+            placeholder="Your Torn Public Key"
+            value={formatDisplayValue(publicKeyInput, showTornKey)}
+            onChange={handleTornKeyChange}
+          />
+          <InputGroupAddon align="inline-end">
+            {getValidationIcon(tornValidation)}
+            <InputGroupButton
+              onClick={() => setShowTornKey(!showTornKey)}
+              type="button"
+              aria-label={showTornKey ? "Hide key" : "Show key"}
+            >
+              {showTornKey ? (
+                <EyeOff className="size-3.5" />
+              ) : (
+                <Eye className="size-3.5" />
+              )}
+            </InputGroupButton>
+            <InputGroupButton
+              onClick={handleValidateTorn}
+              disabled={!publicKeyInput || tornValidation === "validating"}
+            >
+              Validate
+            </InputGroupButton>
+          </InputGroupAddon>
+        </InputGroup>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="ffscouter-key">
+          FFScouter API Key{" "}
+          <span className="text-muted-foreground font-normal">(optional)</span>
+        </Label>
+        <InputGroup
+          aria-invalid={ffscouterValidation === "invalid"}
+          className={
+            ffscouterValidation === "valid"
+              ? "border-green-600 dark:border-green-400"
+              : ""
+          }
+        >
+          <InputGroupInput
+            id="ffscouter-key"
+            type="text"
+            placeholder="Your FFScouter API Key"
+            value={formatDisplayValue(ffscouterKeyInput, showFFScouterKey)}
+            onChange={handleFFScouterKeyChange}
+          />
+          <InputGroupAddon align="inline-end">
+            {getValidationIcon(ffscouterValidation)}
+            <InputGroupButton
+              onClick={() => setShowFFScouterKey(!showFFScouterKey)}
+              type="button"
+              aria-label={showFFScouterKey ? "Hide key" : "Show key"}
+            >
+              {showFFScouterKey ? (
+                <EyeOff className="size-3.5" />
+              ) : (
+                <Eye className="size-3.5" />
+              )}
+            </InputGroupButton>
+            <InputGroupButton
+              onClick={handleValidateFFScouter}
+              disabled={
+                !ffscouterKeyInput || ffscouterValidation === "validating"
+              }
+            >
+              Validate
+            </InputGroupButton>
+          </InputGroupAddon>
+        </InputGroup>
+      </div>
       <Button
         onClick={() => {
           if (publicKeyInput) setPublicKey(publicKeyInput);
