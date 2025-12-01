@@ -1,5 +1,15 @@
 import { SettingsIcon } from "lucide-react";
+import { useState } from "react";
+import { useGlobalStore } from "@/lib/stores";
+import { CredentialsInput } from "./credentials";
 import { Button } from "./ui/button";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "./ui/input-group";
+import { Label } from "./ui/label";
 import {
   Sheet,
   SheetContent,
@@ -8,16 +18,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "./ui/sheet";
-import { CredentialsInput } from "./credentials";
-import { Label } from "./ui/label";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupInput,
-} from "./ui/input-group";
-import { useState } from "react";
-import { useGlobalStore } from "@/lib/stores";
 
 export function SettingsSheet() {
   return (
@@ -60,7 +60,7 @@ function EnemyFactionInput() {
           value={enemyFactionIdInput ?? ""}
           onChange={(e) => {
             const value = e.target.value;
-            setEnemyFactionIdInput(value ? parseInt(value) : undefined);
+            setEnemyFactionIdInput(value ? parseInt(value, 10) : undefined);
           }}
         />
         <InputGroupAddon align="inline-end">

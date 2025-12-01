@@ -1,7 +1,7 @@
-import type { User } from "@/lib/user";
-import type { Faction, FactionChain } from "@/lib/faction";
 import { useQuery } from "@tanstack/react-query";
+import type { Faction, FactionChain } from "@/lib/faction";
 import { useCredentialsStore, useGlobalStore } from "@/lib/stores";
+import type { User } from "@/lib/user";
 
 export const TEST_KEY = "LLHrCIqC3Tfp0yJc";
 export const TEST_ENEMY_FACTION_ID = 46144;
@@ -88,7 +88,7 @@ export const useUserFaction = () => {
       const factions = Object.values(data.ranked_wars)[0]?.factions ?? [];
       Object.keys(factions).forEach((key) => {
         if (key !== data.ID.toString()) {
-          setEnemyFactionId(parseInt(key));
+          setEnemyFactionId(parseInt(key, 10));
         }
       });
 

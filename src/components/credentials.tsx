@@ -1,4 +1,7 @@
+import { Check, Eye, EyeOff, Loader2, X } from "lucide-react";
 import { useState } from "react";
+import { useCredentialsStore } from "@/lib/stores";
+import { Button } from "./ui/button";
 import {
   Card,
   CardContent,
@@ -13,9 +16,6 @@ import {
   InputGroupInput,
   InputGroupText,
 } from "./ui/input-group";
-import { useCredentialsStore } from "@/lib/stores";
-import { Button } from "./ui/button";
-import { Check, X, Loader2, Eye, EyeOff } from "lucide-react";
 
 export function CredentialsCard() {
   return (

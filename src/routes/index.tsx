@@ -1,10 +1,10 @@
+import { createFileRoute } from "@tanstack/react-router";
 import { Chains } from "@/components/chain";
 import { CredentialsCard } from "@/components/credentials";
 import { EnemyFactionTable } from "@/components/enemy-faction";
 import { SettingsSheet } from "@/components/settings";
 import { UserStatus } from "@/components/user-status";
 import { useCredentialsStore } from "@/lib/stores";
-import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
   component: App,

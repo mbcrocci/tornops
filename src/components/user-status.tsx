@@ -1,7 +1,7 @@
-import { useUserData, useUserFactionChain } from "@/hooks/use-torn";
+import { useUserData } from "@/hooks/use-torn";
 import { factionArmoryLink, inventoryLink } from "@/lib/links";
 import { getStatusBgColorClass } from "@/lib/status";
-import { useEffect } from "react";
+import { cn } from "@/lib/utils";
 import { buttonVariants } from "./ui/button";
 import {
   Card,
@@ -11,7 +11,6 @@ import {
   CardTitle,
 } from "./ui/card";
 import { Progress } from "./ui/progress";
-import { cn } from "@/lib/utils";
 
 // Helper function to format time duration
 function formatDuration(seconds: number): string {

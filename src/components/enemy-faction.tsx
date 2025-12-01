@@ -1,7 +1,6 @@
+import { useFFScouterData } from "@/hooks/use-ffscouter";
 import { useEnemyFactionData, useUserData } from "@/hooks/use-torn";
 import type { Member } from "@/lib/faction";
-
-import { useFFScouterData } from "@/hooks/use-ffscouter";
 import { columns } from "./enemy-faction/columns";
 import { DataTable } from "./enemy-faction/data-table";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "./ui/empty";
@@ -93,7 +92,7 @@ export function EnemyFactionTable() {
   const members: MemberWithId[] = enemyFactionData?.members
     ? Object.entries(enemyFactionData.members).map(([id, member]) => ({
         ...member,
-        id: parseInt(id),
+        id: parseInt(id, 10),
       }))
     : [];
   const sortedMembers = sortPlayers(members, userLocation);
