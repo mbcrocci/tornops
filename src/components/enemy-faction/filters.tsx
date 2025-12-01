@@ -1,12 +1,9 @@
-import {
-  ToggleGroup,
-  ToggleGroupItem,
-} from "@/components/ui/toggle-group";
 import { Label } from "@/components/ui/label";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export type OnlineStatusFilter = "Online" | "Idle" | "Offline";
 export type StateFilter = "Okay" | "Hospital" | "Abroad" | "Traveling";
-export type FFFilter = "<2" | "<4" | "<6";
+export type FFFilter = "0-2" | "2-4" | "4-6" | "6-";
 
 export interface FilterState {
   onlineStatus: OnlineStatusFilter[];
@@ -88,7 +85,7 @@ export function Filters({ filters, onFiltersChange }: FiltersProps) {
       />
       <FilterToggleGroup
         label="Fair Fight"
-        options={["<2", "<4", "<6"] as FFFilter[]}
+        options={["0-2", "2-4", "4-6", "6-"] as FFFilter[]}
         selected={filters.ff}
         onValueChange={handleFFChange}
       />

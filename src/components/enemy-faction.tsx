@@ -86,8 +86,18 @@ function filterMembers(
       }
 
       const matchesFF = filters.ff.some((ffFilter) => {
-        const threshold = parseFloat(ffFilter.replace("<", ""));
-        return fairFight < threshold;
+        switch (ffFilter) {
+          case "0-2":
+            return fairFight >= 0 && fairFight < 2;
+          case "2-4":
+            return fairFight >= 2 && fairFight < 4;
+          case "4-6":
+            return fairFight >= 4 && fairFight < 6;
+          case "6-":
+            return fairFight >= 6;
+          default:
+            return false;
+        }
       });
 
       if (!matchesFF) {
