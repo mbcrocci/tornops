@@ -40,6 +40,10 @@ const getUserFactionChain = async (key: string) => {
 };
 
 const getEnemyFactionData = async (enemyFactionId: number, key: string) => {
+  if (enemyFactionId === 0) {
+    return null;
+  }
+
   const url = `https://api.torn.com/faction/${enemyFactionId}`;
 
   const params = new URLSearchParams();

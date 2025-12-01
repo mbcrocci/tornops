@@ -31,11 +31,6 @@ function formatDuration(seconds: number): string {
 
 export function UserStatus() {
   const { data: userData } = useUserData();
-  const { data: userFactionChain } = useUserFactionChain();
-
-  useEffect(() => {
-    console.log(userFactionChain);
-  }, [userFactionChain]);
 
   const healthPercentage = userData
     ? (userData.life.current / userData.life.maximum) * 100

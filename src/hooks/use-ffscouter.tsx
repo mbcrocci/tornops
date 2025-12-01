@@ -1,3 +1,4 @@
+import { useCredentialsStore, useGlobalStore } from "@/lib/stores";
 import { useQuery } from "@tanstack/react-query";
 
 export const FFSCOUTER_API_KEY = "CJJfNJkBgoyMFouX";
@@ -20,9 +21,13 @@ const getFFScouterData = async (key: string, targets: number[]) => {
   return response.json() as Promise<FFScouterData[]>;
 };
 
-export const useFFScouterData = (key: string, targets: number[]) => {
+export const useFFScouterData = (targets: number[]) => {
+  const refetchInterval = useGlobalStore((state) => state.refetchInterval);
+  const ffScouterKey = useCredentialsStore((state) => state.ffscouterKey ?? "");
+
   return useQuery({
-    queryKey: ["ffscouter-data", key, targets],
-    queryFn: () => getFFScouterData(key, targets),
+    queryKey: ["ffscouter-data", ffScouterKey, targets],
+    queryFn: () => getFFScouterData(ffScouterKey, targets),
+    refetchInterval: refetchInterval,
   });
 };

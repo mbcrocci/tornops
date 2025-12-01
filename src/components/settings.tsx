@@ -9,6 +9,15 @@ import {
   SheetTrigger,
 } from "./ui/sheet";
 import { CredentialsInput } from "./credentials";
+import { Label } from "./ui/label";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "./ui/input-group";
+import { useState } from "react";
+import { useGlobalStore } from "@/lib/stores";
 
 export function SettingsSheet() {
   return (
@@ -27,8 +36,52 @@ export function SettingsSheet() {
         </SheetHeader>
         <div className="flex flex-col gap-4 p-4">
           <CredentialsInput />
+          <EnemyFactionInput />
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+function EnemyFactionInput() {
+  const enemyFactionId = useGlobalStore((state) => state.enemyFactionId);
+  const setEnemyFactionId = useGlobalStore((state) => state.setEnemyFactionId);
+
+  const [enemyFactionIdInput, setEnemyFactionIdInput] =
+    useState(enemyFactionId);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Label>Enemy Faction ID</Label>
+      <InputGroup>
+        <InputGroupInput
+          type="number"
+          placeholder="1234567890"
+          value={enemyFactionIdInput ?? ""}
+          onChange={(e) => {
+            const value = e.target.value;
+            setEnemyFactionIdInput(value ? parseInt(value) : undefined);
+          }}
+        />
+        <InputGroupAddon align="inline-end">
+          <InputGroupButton
+            onClick={() => {
+              setEnemyFactionId(enemyFactionIdInput);
+            }}
+          >
+            Save
+          </InputGroupButton>
+          <InputGroupButton
+            variant="outline"
+            onClick={() => {
+              setEnemyFactionId(undefined);
+              setEnemyFactionIdInput(undefined);
+            }}
+          >
+            Reset
+          </InputGroupButton>
+        </InputGroupAddon>
+      </InputGroup>
+    </div>
   );
 }

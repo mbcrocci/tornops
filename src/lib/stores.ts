@@ -27,7 +27,7 @@ interface GlobalState {
   refetchInterval: number;
   enemyFactionId: number | undefined;
   setRefetchInterval: (refetchInterval: number) => void;
-  setEnemyFactionId: (enemyFactionId: number) => void;
+  setEnemyFactionId: (enemyFactionId?: number) => void;
 }
 
 export const useGlobalStore = create<GlobalState>()(
@@ -37,7 +37,7 @@ export const useGlobalStore = create<GlobalState>()(
       enemyFactionId: undefined,
 
       setRefetchInterval: (refetchInterval: number) => set({ refetchInterval }),
-      setEnemyFactionId: (enemyFactionId: number) => set({ enemyFactionId }),
+      setEnemyFactionId: (enemyFactionId?: number) => set({ enemyFactionId }),
     }),
     {
       name: "tornops-monitor",

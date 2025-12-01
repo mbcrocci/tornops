@@ -1,9 +1,10 @@
 import { useEnemyFactionData, useUserData } from "@/hooks/use-torn";
 import type { Member } from "@/lib/faction";
 
-import { FFSCOUTER_API_KEY, useFFScouterData } from "@/hooks/use-ffscouter";
+import { useFFScouterData } from "@/hooks/use-ffscouter";
 import { columns } from "./enemy-faction/columns";
 import { DataTable } from "./enemy-faction/data-table";
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "./ui/empty";
 
 // Helper function to get priority for sorting
 function getPlayerPriority(
@@ -98,9 +99,22 @@ export function EnemyFactionTable() {
   const sortedMembers = sortPlayers(members, userLocation);
 
   const { data: ffScouterData } = useFFScouterData(
-    FFSCOUTER_API_KEY,
     sortedMembers.map((member) => member.id)
   );
+
+  if (!enemyFactionData) {
+    return (
+      <Empty className="">
+        <EmptyHeader className="min-w-lg">
+          <EmptyTitle>No enemy faction</EmptyTitle>
+          <EmptyDescription>
+            You are not currently in a war. If you want to monitor an enemy
+            faction, open the settings and input the enemy faction ID.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    );
+  }
 
   return (
     <div>
