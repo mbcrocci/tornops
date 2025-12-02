@@ -4,6 +4,7 @@ import type { FFScouterData } from "@/hooks/use-ffscouter";
 import type { Member } from "@/lib/faction";
 import { playerAttackLink, playerProfileLink } from "@/lib/links";
 import { cleanStatusDescription, getStatusBgColorClass } from "@/lib/status";
+import { DataTableColumnHeader } from "../data-table-column-header";
 import { HospitalCountdown } from "../hospital-countdown";
 import { buttonVariants } from "../ui/button";
 
@@ -14,8 +15,24 @@ export type EnemyFactionMember = Member & {
 
 export const columns: ColumnDef<EnemyFactionMember>[] = [
   {
-    header: "Online",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Online" />
+    ),
     accessorKey: "online",
+    enableSorting: true,
+    sortingFn: (rowA, rowB) => {
+      const statusA = rowA.original.last_action.status;
+      const statusB = rowB.original.last_action.status;
+
+      // Order: Online > Idle > Offline
+      const statusOrder: Record<string, number> = {
+        Online: 1,
+        Idle: 2,
+        Offline: 3,
+      };
+
+      return (statusOrder[statusA] ?? 99) - (statusOrder[statusB] ?? 99);
+    },
     cell: ({ row }) => {
       const status = row.original.last_action.status;
       let color = "bg-gray-600";
@@ -35,8 +52,11 @@ export const columns: ColumnDef<EnemyFactionMember>[] = [
     },
   },
   {
-    header: "Name",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Name" />
+    ),
     accessorKey: "name",
+    enableSorting: true,
     cell: ({ row }) => {
       return (
         <a
@@ -52,6 +72,7 @@ export const columns: ColumnDef<EnemyFactionMember>[] = [
   {
     header: "Actions",
     accessorKey: "actions",
+    enableSorting: false,
     cell: ({ row }) => {
       return (
         <div className="flex gap-2">
@@ -76,15 +97,47 @@ export const columns: ColumnDef<EnemyFactionMember>[] = [
     },
   },
   {
-    header: "Level",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Level" />
+    ),
     accessorKey: "level",
+    enableSorting: true,
     cell: ({ row }) => {
       return <div>{row.original.level}</div>;
     },
   },
   {
-    header: "Status",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Status" />
+    ),
     accessorKey: "status",
+    enableSorting: true,
+    sortingFn: (rowA, rowB) => {
+      const stateA = rowA.original.status.state;
+      const stateB = rowB.original.status.state;
+
+      // Order: Okay > Hospital > Traveling > Abroad > others
+      const stateOrder: Record<string, number> = {
+        Okay: 1,
+        Hospital: 2,
+        Traveling: 3,
+        Abroad: 4,
+      };
+
+      const orderA = stateOrder[stateA] ?? 99;
+      const orderB = stateOrder[stateB] ?? 99;
+
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+
+      // If both are Hospital, sort by time remaining
+      if (stateA === "Hospital" && stateB === "Hospital") {
+        return rowA.original.status.until - rowB.original.status.until;
+      }
+
+      return 0;
+    },
     cell: ({ row }) => {
       const member = row.original;
       return (
@@ -110,8 +163,22 @@ export const columns: ColumnDef<EnemyFactionMember>[] = [
     },
   },
   {
-    header: "FF",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="FF" />
+    ),
     accessorKey: "ff",
+    enableSorting: true,
+    sortingFn: (rowA, rowB) => {
+      const ffA = rowA.original.ffs?.fair_fight;
+      const ffB = rowB.original.ffs?.fair_fight;
+
+      // Treat undefined/null as highest value (sort to bottom)
+      if (ffA === undefined && ffB === undefined) return 0;
+      if (ffA === undefined) return 1;
+      if (ffB === undefined) return -1;
+
+      return ffA - ffB;
+    },
     cell: ({ row }) => {
       if (!row.original.ffs?.fair_fight) {
         return <div>N/A</div>;
@@ -129,8 +196,22 @@ export const columns: ColumnDef<EnemyFactionMember>[] = [
     },
   },
   {
-    header: "Battle Stats",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Battle Stats" />
+    ),
     accessorKey: "battle_stats",
+    enableSorting: true,
+    sortingFn: (rowA, rowB) => {
+      const bsA = rowA.original.ffs?.bs_estimate;
+      const bsB = rowB.original.ffs?.bs_estimate;
+
+      // Treat undefined/null as highest value (sort to bottom)
+      if (bsA === undefined && bsB === undefined) return 0;
+      if (bsA === undefined) return 1;
+      if (bsB === undefined) return -1;
+
+      return bsA - bsB;
+    },
     cell: ({ row }) => {
       if (!row.original.ffs?.bs_estimate_human) {
         return <div>N/A</div>;
@@ -140,8 +221,17 @@ export const columns: ColumnDef<EnemyFactionMember>[] = [
     },
   },
   {
-    header: "Last Action",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Last Action" />
+    ),
     accessorKey: "last_action",
+    enableSorting: true,
+    sortingFn: (rowA, rowB) => {
+      return (
+        rowA.original.last_action.timestamp -
+        rowB.original.last_action.timestamp
+      );
+    },
     cell: ({ row }) => {
       return <div>{row.original.last_action.relative}</div>;
     },
