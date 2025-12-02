@@ -1,5 +1,5 @@
 import { Check, Eye, EyeOff, Loader2, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCredentialsStore } from "@/lib/stores";
 import { Button } from "./ui/button";
 import {
@@ -17,14 +17,42 @@ import {
 } from "./ui/input-group";
 import { Label } from "./ui/label";
 
-export function CredentialsCard() {
+export function CredentialsCard({
+  showErrors = false,
+}: {
+  showErrors?: boolean;
+}) {
+  const { isTornKeyValid, isFFScouterKeyValid } = useCredentialsStore();
+
+  const hasErrors =
+    showErrors && (isTornKeyValid === false || isFFScouterKeyValid === false);
+
   return (
     <Card className="w-full max-w-lg">
       <CardHeader>
         <CardTitle>Credentials</CardTitle>
-        <CardDescription>Enter your API key to get started</CardDescription>
+        <CardDescription>
+          {hasErrors
+            ? "Your stored credentials are invalid. Please update them."
+            : "Enter your API key to get started"}
+        </CardDescription>
       </CardHeader>
       <CardContent>
+        {hasErrors && (
+          <div className="mb-4 p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-md">
+            <p className="text-sm font-medium text-red-800 dark:text-red-200 mb-1">
+              Invalid Credentials Detected
+            </p>
+            <ul className="text-sm text-red-700 dark:text-red-300 list-disc list-inside space-y-1">
+              {isTornKeyValid === false && (
+                <li>Torn Limited Access API Key is invalid or expired</li>
+              )}
+              {isFFScouterKeyValid === false && (
+                <li>FFScouter API Key is invalid or expired</li>
+              )}
+            </ul>
+          </div>
+        )}
         <CredentialsInput />
       </CardContent>
     </Card>
@@ -33,24 +61,23 @@ export function CredentialsCard() {
 
 type ValidationState = "idle" | "validating" | "valid" | "invalid";
 
-const validateTornKey = async (key: string): Promise<boolean> => {
+export const validateTornKey = async (key: string): Promise<boolean> => {
   try {
-    const url = "https://api.torn.com/user/";
+    const url = "https://api.torn.com/v2/faction/chain";
     const params = new URLSearchParams();
-    params.set("selections", "profile");
     params.set("key", key);
 
     const response = await fetch(`${url}?${params.toString()}`);
     const data = await response.json();
 
-    // Torn API returns error object if key is invalid
+    // Torn API returns error object if key is invalid or doesn't have access
     return !data.error;
   } catch {
     return false;
   }
 };
 
-const validateFFScouterKey = async (key: string): Promise<boolean> => {
+export const validateFFScouterKey = async (key: string): Promise<boolean> => {
   try {
     const url = "https://ffscouter.com/api/v1/get-stats";
     const params = new URLSearchParams();
@@ -68,8 +95,16 @@ const validateFFScouterKey = async (key: string): Promise<boolean> => {
 };
 
 export function CredentialsInput() {
-  const { publicKey, setPublicKey, ffscouterKey, setFFScouterKey } =
-    useCredentialsStore();
+  const {
+    publicKey,
+    setPublicKey,
+    ffscouterKey,
+    setFFScouterKey,
+    isTornKeyValid,
+    isFFScouterKeyValid,
+    setTornKeyValidation,
+    setFFScouterKeyValidation,
+  } = useCredentialsStore();
 
   const [publicKeyInput, setPublicKeyInput] = useState<string | undefined>(
     publicKey
@@ -84,6 +119,32 @@ export function CredentialsInput() {
 
   const [showTornKey, setShowTornKey] = useState(false);
   const [showFFScouterKey, setShowFFScouterKey] = useState(false);
+
+  // Validate stored credentials on mount if they exist but haven't been validated
+  useEffect(() => {
+    const validateStoredCredentials = async () => {
+      // Validate Torn key if present and not yet validated
+      if (publicKey && isTornKeyValid === undefined) {
+        const isValid = await validateTornKey(publicKey);
+        setTornKeyValidation(isValid);
+      }
+
+      // Validate FFScouter key if present and not yet validated
+      if (ffscouterKey && isFFScouterKeyValid === undefined) {
+        const isValid = await validateFFScouterKey(ffscouterKey);
+        setFFScouterKeyValidation(isValid);
+      }
+    };
+
+    validateStoredCredentials();
+  }, [
+    publicKey,
+    ffscouterKey,
+    isTornKeyValid,
+    isFFScouterKeyValid,
+    setTornKeyValidation,
+    setFFScouterKeyValidation,
+  ]);
 
   const handleValidateTorn = async () => {
     if (!publicKeyInput) return;
@@ -147,7 +208,7 @@ export function CredentialsInput() {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="torn-key">Torn Public Key</Label>
+        <Label htmlFor="torn-key">Torn Limited Access API Key</Label>
         <InputGroup
           aria-invalid={tornValidation === "invalid"}
           className={
@@ -159,7 +220,7 @@ export function CredentialsInput() {
           <InputGroupInput
             id="torn-key"
             type="text"
-            placeholder="Your Torn Public Key"
+            placeholder="Your Torn Limited Access API Key"
             value={formatDisplayValue(publicKeyInput, showTornKey)}
             onChange={handleTornKeyChange}
           />
@@ -229,11 +290,42 @@ export function CredentialsInput() {
           </InputGroupAddon>
         </InputGroup>
       </div>
+      {tornValidation === "invalid" && (
+        <p className="text-sm text-red-600 dark:text-red-400">
+          Torn Limited Access API Key is invalid. Please validate it before
+          setting credentials.
+        </p>
+      )}
+      {ffscouterKeyInput && ffscouterValidation === "invalid" && (
+        <p className="text-sm text-red-600 dark:text-red-400">
+          FFScouter API Key is invalid. Please validate it before setting
+          credentials.
+        </p>
+      )}
       <Button
         onClick={() => {
-          if (publicKeyInput) setPublicKey(publicKeyInput);
-          if (ffscouterKeyInput) setFFScouterKey(ffscouterKeyInput);
+          // Only set Torn key if it's valid
+          if (publicKeyInput && tornValidation === "valid") {
+            setPublicKey(publicKeyInput, true);
+          }
+
+          // Handle FFScouter key (optional)
+          if (ffscouterKeyInput) {
+            // Only set if validated and valid
+            if (ffscouterValidation === "valid") {
+              setFFScouterKey(ffscouterKeyInput, true);
+            }
+            // If invalid, don't set it (early return handled by disabled state)
+          } else {
+            // Clear FFScouter key if input is empty
+            setFFScouterKey(undefined, true);
+          }
         }}
+        disabled={
+          !publicKeyInput ||
+          tornValidation !== "valid" ||
+          (!!ffscouterKeyInput && ffscouterValidation === "invalid")
+        }
       >
         Set Credentials
       </Button>

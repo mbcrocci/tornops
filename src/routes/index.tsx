@@ -11,11 +11,18 @@ export const Route = createFileRoute("/")({
 });
 
 function App() {
-  const key = useCredentialsStore((state) => state.publicKey);
-  if (!key) {
+  const { publicKey, isTornKeyValid, isFFScouterKeyValid } =
+    useCredentialsStore();
+
+  // Show credentials card if no key or Torn key is invalid
+  const shouldShowCredentials = !publicKey || isTornKeyValid === false;
+
+  if (shouldShowCredentials) {
     return (
       <div className="container mx-auto p-4 flex flex-col gap-8 items-center justify-center h-screen">
-        <CredentialsCard />
+        <CredentialsCard
+          showErrors={isTornKeyValid === false || isFFScouterKeyValid === false}
+        />
       </div>
     );
   }

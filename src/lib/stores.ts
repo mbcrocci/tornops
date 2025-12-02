@@ -7,8 +7,12 @@ import type { Member } from "@/lib/faction";
 interface CredentialsState {
   publicKey: string | undefined;
   ffscouterKey: string | undefined;
-  setPublicKey: (publicKey: string) => void;
-  setFFScouterKey: (ffscouterKey: string) => void;
+  isTornKeyValid: boolean | undefined;
+  isFFScouterKeyValid: boolean | undefined;
+  setPublicKey: (publicKey: string | undefined, isValid: boolean) => void;
+  setFFScouterKey: (ffscouterKey: string | undefined, isValid: boolean) => void;
+  setTornKeyValidation: (isValid: boolean) => void;
+  setFFScouterKeyValidation: (isValid: boolean) => void;
 }
 
 export const useCredentialsStore = create<CredentialsState>()(
@@ -16,8 +20,22 @@ export const useCredentialsStore = create<CredentialsState>()(
     (set) => ({
       publicKey: undefined, // TODO: make this use inputable
       ffscouterKey: undefined, // TODO: make this use inputable
-      setPublicKey: (publicKey: string) => set({ publicKey }),
-      setFFScouterKey: (ffscouterKey: string) => set({ ffscouterKey }),
+      isTornKeyValid: undefined,
+      isFFScouterKeyValid: undefined,
+      setPublicKey: (publicKey: string | undefined, isValid: boolean) =>
+        set({
+          publicKey: publicKey || undefined,
+          isTornKeyValid: publicKey ? isValid : undefined,
+        }),
+      setFFScouterKey: (ffscouterKey: string | undefined, isValid: boolean) =>
+        set({
+          ffscouterKey: ffscouterKey || undefined,
+          isFFScouterKeyValid: ffscouterKey ? isValid : undefined,
+        }),
+      setTornKeyValidation: (isValid: boolean) =>
+        set({ isTornKeyValid: isValid }),
+      setFFScouterKeyValidation: (isValid: boolean) =>
+        set({ isFFScouterKeyValid: isValid }),
     }),
     {
       name: "tornops-credentials",
