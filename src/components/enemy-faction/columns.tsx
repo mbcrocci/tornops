@@ -7,6 +7,7 @@ import { cleanStatusDescription, getStatusBgColorClass } from "@/lib/status";
 import { DataTableColumnHeader } from "../data-table-column-header";
 import { HospitalCountdown } from "../hospital-countdown";
 import { Button, buttonVariants } from "../ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 export type EnemyFactionMember = Member & {
   id: number;
@@ -238,7 +239,16 @@ export const columns: ColumnDef<EnemyFactionMember>[] = [
     },
   },
   {
-    header: "Pinned",
+    header: () => (
+      <Tooltip>
+        <TooltipTrigger>Pin</TooltipTrigger>
+        <TooltipContent>
+          <p>
+            Toggle to pin or unpin a member to keep them at the top of the list.
+          </p>
+        </TooltipContent>
+      </Tooltip>
+    ),
     accessorKey: "pinned",
     enableSorting: false,
     cell: ({ row }) => {
