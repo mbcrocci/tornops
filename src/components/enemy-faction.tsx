@@ -45,7 +45,7 @@ function filterMembers(
             return fairFight >= 2 && fairFight < 4;
           case "4-6":
             return fairFight >= 4 && fairFight < 6;
-          case "6-":
+          case "6+":
             return fairFight >= 6;
           default:
             return false;
