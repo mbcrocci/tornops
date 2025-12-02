@@ -3,6 +3,7 @@ import {
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
+  type RowSelectionState,
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
@@ -19,26 +20,47 @@ import {
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  getRowId?: (row: TData) => string;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  getRowId,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([
     { id: "status", desc: false },
   ]);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const table = useReactTable({
     data,
     columns,
+    getRowId,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
+    onRowSelectionChange: setRowSelection,
     state: {
       sorting,
+      rowSelection,
     },
   });
+
+  // Get sorted rows and reorder so selected (pinned) rows appear first
+  const sortedRows = table.getSortedRowModel().rows;
+  const selectedRows: typeof sortedRows = [];
+  const unselectedRows: typeof sortedRows = [];
+
+  sortedRows.forEach((row) => {
+    if (row.getIsSelected()) {
+      selectedRows.push(row);
+    } else {
+      unselectedRows.push(row);
+    }
+  });
+
+  const orderedRows = [...selectedRows, ...unselectedRows];
 
   return (
     <div className="overflow-hidden rounded-md border">
@@ -62,8 +84,8 @@ export function DataTable<TData, TValue>({
           ))}
         </TableHeader>
         <TableBody>
-          {table.getRowModel().rows?.length ? (
-            table.getRowModel().rows.map((row) => (
+          {orderedRows?.length ? (
+            orderedRows.map((row) => (
               <TableRow
                 key={row.id}
                 data-state={row.getIsSelected() && "selected"}

@@ -100,7 +100,11 @@ export function EnemyFactionTable() {
         </div>
         <Filters filters={filters} onFiltersChange={setFilters} />
       </div>
-      <DataTable columns={columns} data={filteredMembers} />
+      <DataTable
+        columns={columns}
+        data={filteredMembers}
+        getRowId={(row) => String(row.id)}
+      />
     </div>
   );
 }

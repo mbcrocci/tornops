@@ -1,16 +1,17 @@
 import type { ColumnDef } from "@tanstack/react-table";
-import { Eye, Swords } from "lucide-react";
+import { Eye, Pin, PinOff, Swords } from "lucide-react";
 import type { FFScouterData } from "@/hooks/use-ffscouter";
 import type { Member } from "@/lib/faction";
 import { playerAttackLink, playerProfileLink } from "@/lib/links";
 import { cleanStatusDescription, getStatusBgColorClass } from "@/lib/status";
 import { DataTableColumnHeader } from "../data-table-column-header";
 import { HospitalCountdown } from "../hospital-countdown";
-import { buttonVariants } from "../ui/button";
+import { Button, buttonVariants } from "../ui/button";
 
 export type EnemyFactionMember = Member & {
   id: number;
   ffs?: FFScouterData;
+  pinned?: boolean;
 };
 
 export const columns: ColumnDef<EnemyFactionMember>[] = [
@@ -234,6 +235,26 @@ export const columns: ColumnDef<EnemyFactionMember>[] = [
     },
     cell: ({ row }) => {
       return <div>{row.original.last_action.relative}</div>;
+    },
+  },
+  {
+    header: "Pinned",
+    accessorKey: "pinned",
+    enableSorting: false,
+    cell: ({ row }) => {
+      const selected = row.getIsSelected();
+
+      return (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            row.toggleSelected();
+          }}
+        >
+          {selected ? <PinOff /> : <Pin />}
+        </Button>
+      );
     },
   },
 ];
