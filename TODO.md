@@ -1,2 +1,0 @@
-- Pin target - makes the target be always on top of the list
-- Fix sorting
