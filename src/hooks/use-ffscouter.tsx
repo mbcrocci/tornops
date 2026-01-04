@@ -9,6 +9,7 @@ export type FFScouterData = {
   bss_public: number;
   last_updated: number;
 };
+
 const getFFScouterData = async (key: string, targets: number[]) => {
   const url = "https://ffscouter.com/api/v1/get-stats";
   const params = new URLSearchParams();
