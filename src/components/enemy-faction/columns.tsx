@@ -138,6 +138,10 @@ export const columns: ColumnDef<EnemyFactionMember>[] = [
         return rowA.original.status.until - rowB.original.status.until;
       }
 
+      if (stateA === "Traveling" && stateB === "Traveling") {
+        return rowA.original.status.description.includes("Returning") ? -1 : 1;
+      }
+
       return 0;
     },
     cell: ({ row }) => {
