@@ -16,7 +16,7 @@ const getUserData = async (key: string) => {
 
 	const url = "https://api.torn.com/user/";
 	const params = new URLSearchParams();
-	params.set("selections", "profile,cooldowns");
+	params.set("selections", "profile,cooldowns,bars");
 	params.set("key", key);
 
 	const response = await fetch(`${url}?${params.toString()}`);

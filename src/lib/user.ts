@@ -28,6 +28,10 @@ export type User = {
   last_action: LastAction;
   competition: Competition;
   cooldowns: Cooldowns;
+  energy: Energy;
+  nerve:  Energy;
+  happy:  Energy;
+  chain:  Chain;
 };
 
 export type Basicicons = {
@@ -99,3 +103,23 @@ export type Status = {
   color: string;
   until: number;
 };
+
+export type Chain = {
+  id:       number;
+  current:  number;
+  max:      number;
+  timeout:  number;
+  modifier: number;
+  cooldown: number;
+  start:    number;
+  end:      number;
+}
+
+export type Energy = {
+  current:   number;
+  maximum:   number;
+  increment: number;
+  interval:  number;
+  tick_time: number;
+  full_time: number;
+}

@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "./ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Progress } from "./ui/progress";
-import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useGlobalStore } from "@/lib/stores";
 
@@ -31,6 +30,7 @@ export function UserStatus() {
   const { data: userData } = useUserData();
 
   const healthPercentage = userData ? (userData.life.current / userData.life.maximum) * 100 : 0;
+  const energyPercentage = userData?.energy ? (userData.energy.current / userData.energy.maximum) * 100 : 0;
 
   const medicalCooldownRemaining = userData?.cooldowns.medical || 0;
 
@@ -64,15 +64,29 @@ export function UserStatus() {
       {!collapsedCards && (
         <>
           <CardContent className="space-y-2">
-            {/* Status */}
-            <div>
-              <div className="text-xs font-medium mb-1">Status:</div>
-              <div className="w-full h-4 bg-muted rounded-full overflow-hidden mb-1">
-                <div
-                  className={`h-full rounded-full flex items-center justify-center text-white text-[10px] font-semibold ${getStatusBgColorClass(userData.status.state)}`}
-                  style={{ width: "100%" }}
-                >
-                  {userData.status.description || userData.status.state}
+            {/* Status and Energy */}
+            <div className="flex flex-row gap-2 w-full">
+              {/* Status */}
+              <div className="w-1/2">
+                <div className="text-xs font-medium mb-1">Status:</div>
+                <div className="w-full h-4 bg-muted rounded-full overflow-hidden mb-1">
+                  <div
+                    className={`h-full rounded-full flex items-center justify-center text-white text-[10px] font-semibold ${getStatusBgColorClass(userData.status.state)}`}
+                    style={{ width: "100%" }}
+                  >
+                    {userData.status.description || userData.status.state}
+                  </div>
+                </div>
+              </div>
+
+              {/* Energy */}
+              <div className="w-1/2">
+                <div className="text-xs font-medium mb-1">Energy:</div>
+                <Progress value={energyPercentage} className="h-3" />
+                <div className="text-xs text-muted-foreground">
+                  {userData.energy
+                    ? `${userData.energy.current.toLocaleString()} / ${userData.energy.maximum.toLocaleString()} (${energyPercentage.toFixed(1)}%)`
+                    : "N/A"}
                 </div>
               </div>
             </div>
