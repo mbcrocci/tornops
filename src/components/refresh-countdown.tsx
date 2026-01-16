@@ -49,7 +49,7 @@ export function RefreshCountdown() {
   }
 
   return (
-    <p className="text-sm text-muted-foreground">
+    <p className="text-xs text-muted-foreground">
       Next refresh in {formatTimeRemaining(timeRemaining)}
     </p>
   );

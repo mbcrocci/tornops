@@ -37,7 +37,7 @@ export function EnemyChain() {
 
 export function Chains() {
   return (
-    <Card className="w-full px-4 flex flex-col">
+    <Card className="w-full flex flex-col">
       <Tabs defaultValue="user" className="flex flex-col flex-1">
         <CardHeader>
           <TabsList>
@@ -90,26 +90,26 @@ function Chain({ chain }: { chain: FactionChain }) {
   const chainPercentage = chain.max > 0 ? (chain.current / chain.max) * 100 : 0;
 
   return (
-    <div className="space-y-4 w-full">
+    <div className="space-y-2 w-full">
       {/* Countdown Timer */}
       <div className="text-center">
-        <div className="text-sm font-medium">Time Remaining</div>
-        <div className="text-4xl font-bold">{formatTime(timeRemaining)}</div>
+        <div className="text-xs font-medium">Time Remaining</div>
+        <div className="text-2xl font-bold">{formatTime(timeRemaining)}</div>
         {timeRemaining <= 0 && (
-          <div className="text-sm text-muted-foreground mt-1">
+          <div className="text-xs text-muted-foreground mt-1">
             Chain has expired
           </div>
         )}
       </div>
       {/* Chain Count */}
       <div>
-        <Progress value={chainPercentage} className="h-6" />
+        <Progress value={chainPercentage} className="h-3" />
         <div className="flex justify-between">
-          <div className="text-sm text-muted-foreground mt-1">
+          <div className="text-xs text-muted-foreground mt-1">
             {chain.current.toLocaleString()} / {chain.max.toLocaleString()}
           </div>
 
-          <div className="text-sm text-muted-foreground mt-1">
+          <div className="text-xs text-muted-foreground mt-1">
             {chain.modifier > 0 && <div>Modifier: {chain.modifier}x</div>}
           </div>
         </div>

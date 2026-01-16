@@ -59,13 +59,13 @@ export function UserStatus() {
       <CardHeader>
         <CardTitle>Your Status</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-2">
         {/* Status */}
         <div>
-          <div className="text-sm font-medium mb-2">Status:</div>
-          <div className="w-full h-6 bg-muted rounded-full overflow-hidden mb-1">
+          <div className="text-xs font-medium mb-1">Status:</div>
+          <div className="w-full h-4 bg-muted rounded-full overflow-hidden mb-1">
             <div
-              className={`h-full rounded-full flex items-center justify-center text-white text-xs font-semibold ${getStatusBgColorClass(userData.status.state)}`}
+              className={`h-full rounded-full flex items-center justify-center text-white text-[10px] font-semibold ${getStatusBgColorClass(userData.status.state)}`}
               style={{ width: "100%" }}
             >
               {userData.status.description || userData.status.state}
@@ -75,9 +75,9 @@ export function UserStatus() {
         <div className="flex flex-row gap-2 w-full">
           {/* Health */}
           <div className="w-1/2">
-            <div className="text-sm font-medium mb-2">Health:</div>
-            <Progress value={healthPercentage} className="h-6" />
-            <div className="text-sm text-muted-foreground">
+            <div className="text-xs font-medium mb-1">Health:</div>
+            <Progress value={healthPercentage} className="h-3" />
+            <div className="text-xs text-muted-foreground">
               {userData.life.current.toLocaleString()} /{" "}
               {userData.life.maximum.toLocaleString()} (
               {healthPercentage.toFixed(1)}%)
@@ -86,15 +86,15 @@ export function UserStatus() {
 
           {/* Medical Cooldown */}
           <div className="w-1/2">
-            <div className="text-sm font-medium mb-2">Medical Cooldown:</div>
+            <div className="text-xs font-medium mb-1">Medical Cooldown:</div>
             {/* <div className="w-full h-6 bg-muted outline-input rounded-full overflow-hidden mb-1">
                 <div
                   className="h-full rounded-full bg-primary transition-all"
                   style={{ width: `${medicalCooldownPercentage}%` }}
                 />
               </div> */}
-            <Progress value={medicalCooldownPercentage} className="h-6" />
-            <div className="text-sm text-muted-foreground">
+            <Progress value={medicalCooldownPercentage} className="h-3" />
+            <div className="text-xs text-muted-foreground">
               {formatDuration(medicalCooldownElapsed)} /{" "}
               {formatDuration(medicalCooldownTotal)} (
               {medicalCooldownPercentage.toFixed(1)}%)
@@ -102,12 +102,12 @@ export function UserStatus() {
           </div>
         </div>
       </CardContent>
-      <CardFooter className="flex gap-4 items-center justify-center px-8">
+      <CardFooter className="flex gap-2 items-center justify-center px-4">
         <a
           href={factionArmoryLink()}
           target="_blank"
           rel="noopener noreferrer"
-          className={cn(buttonVariants({ variant: "default" }), "w-1/2")}
+          className={cn(buttonVariants({ variant: "default", size: "sm" }), "w-1/2")}
         >
           Faction Armory
         </a>
@@ -115,7 +115,7 @@ export function UserStatus() {
           href={inventoryLink()}
           target="_blank"
           rel="noopener noreferrer"
-          className={cn(buttonVariants({ variant: "default" }), "w-1/2")}
+          className={cn(buttonVariants({ variant: "default", size: "sm" }), "w-1/2")}
         >
           Inventory
         </a>

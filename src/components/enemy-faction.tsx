@@ -89,10 +89,10 @@ export function EnemyFactionTable() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <div>
-          <h2 className="text-xl font-bold">
+          <h2 className="text-sm font-bold">
             {enemyFaction?.tag} - {enemyFaction?.name} [{enemyFaction?.id}] (
             {enemyFaction?.capacity} members)
           </h2>

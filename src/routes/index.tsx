@@ -19,7 +19,7 @@ function App() {
 
   if (shouldShowCredentials) {
     return (
-      <div className="container mx-auto p-4 flex flex-col gap-8 items-center justify-center h-screen">
+      <div className="container mx-auto p-2 flex flex-col gap-4 items-center justify-center h-screen">
         <CredentialsCard
           showErrors={isTornKeyValid === false || isFFScouterKeyValid === false}
         />
@@ -28,11 +28,11 @@ function App() {
   }
 
   return (
-    <div className="container mx-auto p-4 flex flex-col gap-8">
-      <div className="flex justify-end absolute top-4 right-4">
+    <div className="container mx-auto p-2 flex flex-col gap-2">
+      <div className="flex justify-end absolute top-2 right-2">
         <SettingsSheet />
       </div>
-      <div className="flex flex-row gap-4 w-full">
+      <div className="flex flex-row gap-2 w-full">
         <UserStatus />
         <Chains />
       </div>
