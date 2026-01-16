@@ -1,9 +1,11 @@
-import { useEnemyMembers } from "@/hooks/use-torn";
+import { RotateCw } from "lucide-react";
+import { useEnemyFactionData, useEnemyMembers } from "@/hooks/use-torn";
 import { type EnemyMember, useGlobalStore } from "@/lib/stores";
 import { columns } from "./enemy-faction/columns";
 import { DataTable } from "./enemy-faction/data-table";
 import { Filters } from "./enemy-faction/filters";
 import { RefreshCountdown } from "./refresh-countdown";
+import { Button } from "./ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "./ui/empty";
 
 // Filtering function
@@ -65,14 +67,24 @@ export function EnemyFactionTable() {
   // Hook to fetch and store enriched enemy members
   useEnemyMembers();
 
+  // Get refetch function from react-query
+  const { refetch } = useEnemyFactionData();
+
   // Read from store
   const filters = useGlobalStore((state) => state.filters);
   const setFilters = useGlobalStore((state) => state.setFilters);
   const enemyMembers = useGlobalStore((state) => state.enemyMembers);
   const enemyFaction = useGlobalStore((state) => state.enemyFaction);
+  const setLastRefreshTime = useGlobalStore((state) => state.setLastRefreshTime);
 
   // Apply filters
   const filteredMembers = filterMembers(enemyMembers, filters);
+
+  // Handle refresh button click
+  const handleRefresh = async () => {
+    await refetch();
+    setLastRefreshTime(Date.now());
+  };
 
   if (!enemyMembers.length) {
     return (
@@ -91,12 +103,22 @@ export function EnemyFactionTable() {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div>
-          <h2 className="text-sm font-bold">
-            {enemyFaction?.tag} - {enemyFaction?.name} [{enemyFaction?.id}] (
-            {enemyFaction?.capacity} members)
-          </h2>
-          <RefreshCountdown />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={handleRefresh}
+            aria-label="Refresh enemy faction data"
+          >
+            <RotateCw className="size-4" />
+          </Button>
+          <div>
+            <h2 className="text-sm font-bold">
+              {enemyFaction?.tag} - {enemyFaction?.name} [{enemyFaction?.id}] (
+              {enemyFaction?.capacity} members)
+            </h2>
+            <RefreshCountdown />
+          </div>
         </div>
         <Filters filters={filters} onFiltersChange={setFilters} />
       </div>
