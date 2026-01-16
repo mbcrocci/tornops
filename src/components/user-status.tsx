@@ -2,15 +2,12 @@ import { useUserData } from "@/hooks/use-torn";
 import { factionArmoryLink, inventoryLink } from "@/lib/links";
 import { getStatusBgColorClass } from "@/lib/status";
 import { cn } from "@/lib/utils";
-import { buttonVariants } from "./ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
+import { Button, buttonVariants } from "./ui/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Progress } from "./ui/progress";
+import { useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { useGlobalStore } from "@/lib/stores";
 
 // Helper function to format time duration
 function formatDuration(seconds: number): string {
@@ -29,97 +26,104 @@ function formatDuration(seconds: number): string {
 }
 
 export function UserStatus() {
+  const collapsedCards = useGlobalStore((state) => state.collapsedCards);
+  const setCollapsedCards = useGlobalStore((state) => state.setCollapsedCards);
   const { data: userData } = useUserData();
 
-  const healthPercentage = userData
-    ? (userData.life.current / userData.life.maximum) * 100
-    : 0;
+  const healthPercentage = userData ? (userData.life.current / userData.life.maximum) * 100 : 0;
 
   const medicalCooldownRemaining = userData?.cooldowns.medical || 0;
 
   // Standard medical cooldown is 8 hours (28800 seconds)
   // If remaining time is greater than 8h, use it as the total (cooldown just started with extended time)
   const standardMedicalCooldown = 8 * 3600; // 8 hours
-  const medicalCooldownTotal = Math.max(
-    standardMedicalCooldown,
-    medicalCooldownRemaining
-  );
+  const medicalCooldownTotal = Math.max(standardMedicalCooldown, medicalCooldownRemaining);
   const medicalCooldownElapsed = userData?.cooldowns.medical || 0;
   //medicalCooldownTotal - medicalCooldownRemaining;
 
   const medicalCooldownPercentage =
-    medicalCooldownTotal > 0
-      ? (medicalCooldownElapsed / medicalCooldownTotal) * 100
-      : 0;
+    medicalCooldownTotal > 0 ? (medicalCooldownElapsed / medicalCooldownTotal) * 100 : 0;
 
   if (!userData) return null;
 
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Your Status</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {/* Status */}
-        <div>
-          <div className="text-xs font-medium mb-1">Status:</div>
-          <div className="w-full h-4 bg-muted rounded-full overflow-hidden mb-1">
-            <div
-              className={`h-full rounded-full flex items-center justify-center text-white text-[10px] font-semibold ${getStatusBgColorClass(userData.status.state)}`}
-              style={{ width: "100%" }}
-            >
-              {userData.status.description || userData.status.state}
-            </div>
-          </div>
-        </div>
-        <div className="flex flex-row gap-2 w-full">
-          {/* Health */}
-          <div className="w-1/2">
-            <div className="text-xs font-medium mb-1">Health:</div>
-            <Progress value={healthPercentage} className="h-3" />
-            <div className="text-xs text-muted-foreground">
-              {userData.life.current.toLocaleString()} /{" "}
-              {userData.life.maximum.toLocaleString()} (
-              {healthPercentage.toFixed(1)}%)
-            </div>
-          </div>
+        <div className="flex flex-row items-center justify-between">
+          <CardTitle>Your Status</CardTitle>
 
-          {/* Medical Cooldown */}
-          <div className="w-1/2">
-            <div className="text-xs font-medium mb-1">Medical Cooldown:</div>
-            {/* <div className="w-full h-6 bg-muted outline-input rounded-full overflow-hidden mb-1">
-                <div
-                  className="h-full rounded-full bg-primary transition-all"
-                  style={{ width: `${medicalCooldownPercentage}%` }}
-                />
-              </div> */}
-            <Progress value={medicalCooldownPercentage} className="h-3" />
-            <div className="text-xs text-muted-foreground">
-              {formatDuration(medicalCooldownElapsed)} /{" "}
-              {formatDuration(medicalCooldownTotal)} (
-              {medicalCooldownPercentage.toFixed(1)}%)
-            </div>
-          </div>
+          <Button variant="ghost" size="icon" onClick={() => setCollapsedCards(!collapsedCards)}>
+            {collapsedCards ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+          </Button>
         </div>
-      </CardContent>
-      <CardFooter className="flex gap-2 items-center justify-center px-4">
-        <a
-          href={factionArmoryLink()}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={cn(buttonVariants({ variant: "default", size: "sm" }), "w-1/2")}
-        >
-          Faction Armory
-        </a>
-        <a
-          href={inventoryLink()}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={cn(buttonVariants({ variant: "default", size: "sm" }), "w-1/2")}
-        >
-          Inventory
-        </a>
-      </CardFooter>
+      </CardHeader>
+      {!collapsedCards && (
+        <>
+          <CardContent className="space-y-2">
+            {/* Status */}
+            <div>
+              <div className="text-xs font-medium mb-1">Status:</div>
+              <div className="w-full h-4 bg-muted rounded-full overflow-hidden mb-1">
+                <div
+                  className={`h-full rounded-full flex items-center justify-center text-white text-[10px] font-semibold ${getStatusBgColorClass(userData.status.state)}`}
+                  style={{ width: "100%" }}
+                >
+                  {userData.status.description || userData.status.state}
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-row gap-2 w-full">
+              {/* Health */}
+              <div className="w-1/2">
+                <div className="text-xs font-medium mb-1">Health:</div>
+                <Progress value={healthPercentage} className="h-3" />
+                <div className="text-xs text-muted-foreground">
+                  {userData.life.current.toLocaleString()} /{" "}
+                  {userData.life.maximum.toLocaleString()} ({healthPercentage.toFixed(1)}%)
+                </div>
+              </div>
+
+              {/* Medical Cooldown */}
+              <div className="w-1/2">
+                <div className="text-xs font-medium mb-1">Medical Cooldown:</div>
+                {/* <div className="w-full h-6 bg-muted outline-input rounded-full overflow-hidden mb-1">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all"
+                    style={{ width: `${medicalCooldownPercentage}%` }}
+                  />
+                </div> */}
+                <Progress value={medicalCooldownPercentage} className="h-3" />
+                <div className="text-xs text-muted-foreground">
+                  {formatDuration(medicalCooldownElapsed)} / {formatDuration(medicalCooldownTotal)}{" "}
+                  ({medicalCooldownPercentage.toFixed(1)}%)
+                </div>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="flex gap-2 items-center justify-center px-4">
+            <a
+              href={factionArmoryLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(buttonVariants({ variant: "default", size: "sm" }), "w-1/2")}
+            >
+              Faction Armory
+            </a>
+            <a
+              href={inventoryLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(buttonVariants({ variant: "default", size: "sm" }), "w-1/2")}
+            >
+              Inventory
+            </a>
+          </CardFooter>
+        </>
+      )}
     </Card>
   );
 }

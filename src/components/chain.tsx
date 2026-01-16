@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader } from "./ui/card";
 import { Progress } from "./ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
+import { Button } from "./ui/button";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { useGlobalStore } from "@/lib/stores";
 
 // Helper function to format time duration
 function formatTime(seconds: number): string {
@@ -36,29 +39,37 @@ export function EnemyChain() {
 }
 
 export function Chains() {
+  const collapsedCards = useGlobalStore((state) => state.collapsedCards);
+  const setCollapsedCards = useGlobalStore((state) => state.setCollapsedCards);
+
   return (
     <Card className="w-full flex flex-col">
       <Tabs defaultValue="user" className="flex flex-col flex-1">
         <CardHeader>
-          <TabsList>
-            <TabsTrigger value="user">User Chain</TabsTrigger>
-            <TabsTrigger value="enemy">Enemy Chain</TabsTrigger>
-          </TabsList>
+          <div className="flex flex-row items-center justify-between">
+            <TabsList>
+              <TabsTrigger value="user">User Chain</TabsTrigger>
+              <TabsTrigger value="enemy">Enemy Chain</TabsTrigger>
+            </TabsList>
+            <Button variant="ghost" size="icon" onClick={() => setCollapsedCards(!collapsedCards)}>
+              {collapsedCards ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent className="flex flex-col flex-1 justify-center min-h-0">
-          <TabsContent
-            value="user"
-            className="mt-0 flex-1 flex items-center justify-center"
-          >
-            <UserChain />
-          </TabsContent>
-          <TabsContent
-            value="enemy"
-            className="mt-0 flex-1 flex items-center justify-center"
-          >
-            <EnemyChain />
-          </TabsContent>
-        </CardContent>
+        {!collapsedCards && (
+          <CardContent className="flex flex-col flex-1 justify-center min-h-0">
+            <TabsContent value="user" className="mt-0 flex-1 flex items-center justify-center">
+              <UserChain />
+            </TabsContent>
+            <TabsContent value="enemy" className="mt-0 flex-1 flex items-center justify-center">
+              <EnemyChain />
+            </TabsContent>
+          </CardContent>
+        )}
       </Tabs>
     </Card>
   );
@@ -96,9 +107,7 @@ function Chain({ chain }: { chain: FactionChain }) {
         <div className="text-xs font-medium">Time Remaining</div>
         <div className="text-2xl font-bold">{formatTime(timeRemaining)}</div>
         {timeRemaining <= 0 && (
-          <div className="text-xs text-muted-foreground mt-1">
-            Chain has expired
-          </div>
+          <div className="text-xs text-muted-foreground mt-1">Chain has expired</div>
         )}
       </div>
       {/* Chain Count */}

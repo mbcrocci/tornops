@@ -66,12 +66,14 @@ interface GlobalState {
   filters: FilterState;
   enemyMembers: EnemyMember[];
   lastRefreshTime: number | undefined;
+  collapsedCards: boolean;
   setRefetchInterval: (refetchInterval: number) => void;
   setEnemyFactionId: (enemyFactionId?: number) => void;
   setEnemyFaction: (enemyFaction?: EnemyFaction) => void;
   setFilters: (filters: FilterState) => void;
   setEnemyMembers: (members: EnemyMember[]) => void;
   setLastRefreshTime: (timestamp: number) => void;
+  setCollapsedCards: (collapsedCards: boolean) => void;
 }
 
 export const useGlobalStore = create<GlobalState>()(
@@ -87,6 +89,7 @@ export const useGlobalStore = create<GlobalState>()(
       enemyFaction: undefined,
       enemyMembers: [],
       lastRefreshTime: undefined,
+      collapsedCards: false,
 
       setRefetchInterval: (refetchInterval: number) => set({ refetchInterval }),
       setEnemyFactionId: (enemyFactionId?: number) => set({ enemyFactionId }),
@@ -96,6 +99,7 @@ export const useGlobalStore = create<GlobalState>()(
         set({ enemyMembers: members }),
       setLastRefreshTime: (timestamp: number) =>
         set({ lastRefreshTime: timestamp }),
+      setCollapsedCards: (collapsedCards: boolean) => set({ collapsedCards }),
     }),
     {
       name: "tornops-monitor",
