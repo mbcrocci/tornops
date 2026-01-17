@@ -69,9 +69,9 @@ export function UserStatus() {
               {/* Status */}
               <div className="w-1/2">
                 <div className="text-xs font-medium mb-1">Status:</div>
-                <div className="w-full h-4 bg-muted rounded-full overflow-hidden mb-1">
+                <div className="w-full h-4 bg-muted overflow-hidden mb-1">
                   <div
-                    className={`h-full rounded-full flex items-center justify-center text-white text-[10px] font-semibold ${getStatusBgColorClass(userData.status.state)}`}
+                    className={`h-full flex items-center justify-center text-white text-[8px] md:text-[10px] font-semibold ${getStatusBgColorClass(userData.status.state)}`}
                     style={{ width: "100%" }}
                   >
                     {userData.status.description || userData.status.state}

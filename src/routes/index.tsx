@@ -32,7 +32,7 @@ function App() {
       <div className="flex justify-end absolute top-2 right-2">
         <SettingsSheet />
       </div>
-      <div className="flex flex-row gap-2 w-full">
+      <div className="flex flex-col md:flex-row gap-2 w-full">
         <UserStatus />
         <Chains />
       </div>
