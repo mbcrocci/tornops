@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Chains } from "@/components/chain";
 import { CredentialsCard } from "@/components/credentials";
-import { EnemyFactionTable } from "@/components/enemy-faction";
+import { FactionComparison } from "@/components/faction/faction-comparison";
 import { SettingsSheet } from "@/components/settings";
 import { UserStatus } from "@/components/user-status";
 import { useCredentialsStore } from "@/lib/stores";
@@ -36,7 +36,7 @@ function App() {
         <UserStatus />
         <Chains />
       </div>
-      <EnemyFactionTable />
+      <FactionComparison />
     </div>
   );
 }

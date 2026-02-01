@@ -42,6 +42,16 @@ const getUserFactionChain = async (key: string) => {
 	return response.json() as Promise<{ chain: FactionChain }>;
 };
 
+const getUserFactionData = async (key: string) => {
+	const url = "https://api.torn.com/faction/";
+	const params = new URLSearchParams();
+	params.set("selections", "basic");
+	params.set("key", key);
+
+	const response = await fetch(`${url}?${params.toString()}`);
+	return response.json() as Promise<Faction>;
+};
+
 const getEnemyFactionData = async (enemyFactionId: number, key: string) => {
 	if (enemyFactionId === 0) {
 		return null;
@@ -189,4 +199,70 @@ export const useEnemyMembers = () => {
 			setEnemyMembers(members);
 		}
 	}, [members, ffScouterData, setEnemyMembers]);
+};
+
+export const useUserFactionData = () => {
+	const key = useCredentialsStore((state) => state.publicKey ?? "");
+	const refetchInterval = useGlobalStore((state) => state.refetchInterval);
+
+	return useQuery({
+		queryKey: ["user-faction-data", key],
+		queryFn: () => getUserFactionData(key),
+		refetchInterval: refetchInterval,
+	});
+};
+
+/**
+ * Hook that fetches user faction data, enriches members with FFScouter data,
+ * and stores them in the global store.
+ */
+export const useUserMembers = () => {
+	const { data: userFactionData, dataUpdatedAt } = useUserFactionData();
+	const setUserMembers = useGlobalStore((state) => state.setUserMembers);
+	const setUserFaction = useGlobalStore((state) => state.setUserFaction);
+	const setLastRefreshTime = useGlobalStore(
+		(state) => state.setLastRefreshTime,
+	);
+
+	// Convert members object to array with IDs
+	const members = useMemo(() => {
+		if (!userFactionData?.members) return [];
+		return Object.entries(userFactionData.members).map(([id, member]) => ({
+			...member,
+			id: parseInt(id, 10),
+		}));
+	}, [userFactionData?.members]);
+
+	// Get FF scouter data for all members
+	const memberIds = useMemo(
+		() => members.map((member) => member.id),
+		[members],
+	);
+	const { data: ffScouterData } = useFFScouterData(memberIds);
+
+	useEffect(() => {
+		if (userFactionData) {
+			setUserFaction({
+				id: userFactionData.ID,
+				name: userFactionData.name,
+				tag: userFactionData.tag,
+				capacity: userFactionData.capacity,
+			});
+			// Update refresh time when data is fetched
+			setLastRefreshTime(dataUpdatedAt);
+		}
+	}, [userFactionData, dataUpdatedAt, setUserFaction, setLastRefreshTime]);
+
+	// Enrich members with FF scouter data and store in global store
+	useEffect(() => {
+		if (members.length > 0 && ffScouterData) {
+			const enrichedMembers: EnemyMember[] = members.map((member) => {
+				const ffs = ffScouterData.find((f) => f.player_id === member.id);
+				return { ...member, ffs };
+			});
+			setUserMembers(enrichedMembers);
+		} else {
+			setUserMembers(members);
+		}
+	}, [members, ffScouterData, setUserMembers]);
 };

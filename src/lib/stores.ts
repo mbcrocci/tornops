@@ -52,7 +52,18 @@ export type EnemyMember = MemberWithId & {
   ffs?: FFScouterData;
 };
 
+export type UserMember = MemberWithId & {
+  ffs?: FFScouterData;
+};
+
 export type EnemyFaction = {
+  id: number;
+  name: string;
+  tag: string;
+  capacity: number;
+};
+
+export type UserFaction = {
   id: number;
   name: string;
   tag: string;
@@ -63,15 +74,19 @@ interface GlobalState {
   refetchInterval: number;
   enemyFactionId: number | undefined;
   enemyFaction?: EnemyFaction;
+  userFaction?: UserFaction;
   filters: FilterState;
   enemyMembers: EnemyMember[];
+  userMembers: UserMember[];
   lastRefreshTime: number | undefined;
   collapsedCards: boolean;
   setRefetchInterval: (refetchInterval: number) => void;
   setEnemyFactionId: (enemyFactionId?: number) => void;
   setEnemyFaction: (enemyFaction?: EnemyFaction) => void;
+  setUserFaction: (userFaction?: UserFaction) => void;
   setFilters: (filters: FilterState) => void;
   setEnemyMembers: (members: EnemyMember[]) => void;
+  setUserMembers: (members: UserMember[]) => void;
   setLastRefreshTime: (timestamp: number) => void;
   setCollapsedCards: (collapsedCards: boolean) => void;
 }
@@ -87,16 +102,21 @@ export const useGlobalStore = create<GlobalState>()(
       },
       enemyFactionId: undefined,
       enemyFaction: undefined,
+      userFaction: undefined,
       enemyMembers: [],
+      userMembers: [],
       lastRefreshTime: undefined,
       collapsedCards: false,
 
       setRefetchInterval: (refetchInterval: number) => set({ refetchInterval }),
       setEnemyFactionId: (enemyFactionId?: number) => set({ enemyFactionId }),
       setEnemyFaction: (enemyFaction?: EnemyFaction) => set({ enemyFaction }),
+      setUserFaction: (userFaction?: UserFaction) => set({ userFaction }),
       setFilters: (filters: FilterState) => set({ filters }),
       setEnemyMembers: (members: EnemyMember[]) =>
         set({ enemyMembers: members }),
+      setUserMembers: (members: UserMember[]) =>
+        set({ userMembers: members }),
       setLastRefreshTime: (timestamp: number) =>
         set({ lastRefreshTime: timestamp }),
       setCollapsedCards: (collapsedCards: boolean) => set({ collapsedCards }),
