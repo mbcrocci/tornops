@@ -14,6 +14,7 @@ import { RefreshCountdown } from "../refresh-countdown";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { EnemyFactionEmptyState } from "../enemy-faction";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "../ui/empty";
 
 // Filtering function for faction members
@@ -97,17 +98,7 @@ function EnemyFactionContent() {
   };
 
   if (!enemyMembers.length) {
-    return (
-      <Empty>
-        <EmptyHeader className="min-w-lg">
-          <EmptyTitle>No enemy faction</EmptyTitle>
-          <EmptyDescription>
-            You are not currently in a war. If you want to monitor an enemy
-            faction, open the settings and input the enemy faction ID.
-          </EmptyDescription>
-        </EmptyHeader>
-      </Empty>
-    );
+    return <EnemyFactionEmptyState />;
   }
 
   return (

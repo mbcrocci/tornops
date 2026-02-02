@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import type { Faction, FactionChain } from "@/lib/faction";
 import {
@@ -108,6 +108,30 @@ export const useUserFaction = () => {
 			return data;
 		},
 		refetchInterval: refetchInterval,
+	});
+};
+
+export const useCheckWarsForEnemyFaction = () => {
+	const publicKey = useCredentialsStore((state) => state.publicKey ?? "");
+	const setEnemyFactionId = useGlobalStore((state) => state.setEnemyFactionId);
+
+	return useMutation({
+		mutationFn: async (): Promise<{ enemySet: boolean }> => {
+			if (!publicKey) {
+				throw new Error("No API key provided");
+			}
+			const data = await getUserFaction(publicKey);
+			const firstWar = Object.values(data.ranked_wars)[0];
+			const factions = firstWar?.factions ?? {};
+			const enemyId = Object.keys(factions).find(
+				(id) => parseInt(id, 10) !== data.ID,
+			);
+			if (enemyId) {
+				setEnemyFactionId(parseInt(enemyId, 10));
+				return { enemySet: true };
+			}
+			return { enemySet: false };
+		},
 	});
 };
 
