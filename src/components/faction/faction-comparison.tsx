@@ -203,8 +203,6 @@ function UserFactionContent() {
 }
 
 export function FactionComparison() {
-  const collapsedCards = useGlobalStore((state) => state.collapsedCards);
-
   return (
     <Card className="w-full p-0 flex flex-col gap-1">
       <Tabs defaultValue="enemy" className="w-full gap-0">
@@ -226,7 +224,7 @@ export function FactionComparison() {
             </TabsList>
           </div>
         </CardHeader>
-        <CardContent className={collapsedCards ? "hidden" : "p-2 pt-0"}>
+        <CardContent className="p-2 pt-0">
           <TabsContent value="enemy">
             <EnemyFactionContent />
           </TabsContent>
