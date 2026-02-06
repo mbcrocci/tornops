@@ -5,9 +5,8 @@ import {
   useUserFactionData,
   useUserMembers,
 } from "@/hooks/use-torn";
-import { type FactionMember } from "./columns";
+import { type FactionMember, useFactionColumns } from "./columns";
 import { useGlobalStore } from "@/lib/stores";
-import { factionColumns } from "./columns";
 import { DataTable } from "../enemy-faction/data-table";
 import { Filters } from "../enemy-faction/filters";
 import { RefreshCountdown } from "../refresh-countdown";
@@ -79,6 +78,8 @@ function EnemyFactionContent() {
   // Get refetch function from react-query
   const { refetch } = useEnemyFactionData();
 
+  const columns = useFactionColumns();
+
   // Read from store
   const filters = useGlobalStore((state) => state.filters);
   const setFilters = useGlobalStore((state) => state.setFilters);
@@ -124,7 +125,7 @@ function EnemyFactionContent() {
         <Filters filters={filters} onFiltersChange={setFilters} />
       </div>
       <DataTable
-        columns={factionColumns}
+        columns={columns}
         data={filteredMembers}
         getRowId={(row) => String(row.id)}
       />
@@ -138,6 +139,8 @@ function UserFactionContent() {
 
   // Get refetch function from react-query
   const { refetch } = useUserFactionData();
+
+  const columns = useFactionColumns();
 
   // Read from store
   const filters = useGlobalStore((state) => state.filters);
@@ -194,7 +197,7 @@ function UserFactionContent() {
         <Filters filters={filters} onFiltersChange={setFilters} />
       </div>
       <DataTable
-        columns={factionColumns}
+        columns={columns}
         data={filteredMembers}
         getRowId={(row) => String(row.id)}
       />
