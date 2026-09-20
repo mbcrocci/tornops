@@ -203,14 +203,14 @@ const getEnemyFactionChain = async (enemyFactionId: number, key: string) => {
 	return response.json() as Promise<{ chain: FactionChain }>;
 };
 
-export const useUserData = () => {
+export const useUserData = (refetchIntervalOverride?: number) => {
 	const key = useCredentialsStore((state) => state.publicKey ?? "");
 	const refetchInterval = useGlobalStore((state) => state.refetchInterval);
 
 	return useQuery({
 		queryKey: ["user-data", key],
 		queryFn: () => getUserData(key),
-		refetchInterval: refetchInterval,
+		refetchInterval: refetchIntervalOverride ?? refetchInterval,
 	});
 };
 
@@ -261,7 +261,7 @@ export const useCheckWarsForEnemyFaction = () => {
 	});
 };
 
-export const useEnemyFactionData = () => {
+export const useEnemyFactionData = (refetchIntervalOverride?: number) => {
 	const publicKey = useCredentialsStore((state) => state.publicKey ?? "");
 	const refetchInterval = useGlobalStore((state) => state.refetchInterval);
 	const enemyFactionId = useGlobalStore((state) => state.enemyFactionId ?? 0);
@@ -269,22 +269,25 @@ export const useEnemyFactionData = () => {
 	return useQuery({
 		queryKey: ["enemy-faction-data", enemyFactionId],
 		queryFn: () => getEnemyFactionData(enemyFactionId, publicKey),
-		refetchInterval: refetchInterval,
+		refetchInterval: refetchIntervalOverride ?? refetchInterval,
 	});
 };
 
-export const useUserFactionChain = () => {
+export const useUserFactionChain = (refetchIntervalOverride?: number) => {
 	const key = useCredentialsStore((state) => state.publicKey ?? "");
 	const refetchInterval = useGlobalStore((state) => state.refetchInterval);
 
 	return useQuery({
 		queryKey: ["user-faction-chain", key],
 		queryFn: () => getUserFactionChain(key),
-		refetchInterval: refetchInterval,
+		refetchInterval: refetchIntervalOverride ?? refetchInterval,
 	});
 };
 
-export const useFactionChainReport = (enabled: boolean) => {
+export const useFactionChainReport = (
+	enabled: boolean,
+	refetchIntervalOverride?: number,
+) => {
 	const key = useCredentialsStore((state) => state.publicKey ?? "");
 	const refetchInterval = useGlobalStore((state) => state.refetchInterval);
 
@@ -292,11 +295,14 @@ export const useFactionChainReport = (enabled: boolean) => {
 		queryKey: ["faction-chain-report", key],
 		queryFn: () => getFactionChainReport(key),
 		enabled: Boolean(key && enabled),
-		refetchInterval: refetchInterval,
+		refetchInterval: refetchIntervalOverride ?? refetchInterval,
 	});
 };
 
-export const useFactionChainAttacks = (chainStart: number | undefined) => {
+export const useFactionChainAttacks = (
+	chainStart: number | undefined,
+	refetchIntervalOverride?: number,
+) => {
 	const key = useCredentialsStore((state) => state.publicKey ?? "");
 	const refetchInterval = useGlobalStore((state) => state.refetchInterval);
 
@@ -304,7 +310,7 @@ export const useFactionChainAttacks = (chainStart: number | undefined) => {
 		queryKey: ["faction-chain-attacks", chainStart, key],
 		queryFn: () => getChainAttacks(key, chainStart ?? 0),
 		enabled: Boolean(key && chainStart),
-		refetchInterval: refetchInterval,
+		refetchInterval: refetchIntervalOverride ?? refetchInterval,
 	});
 };
 
@@ -324,8 +330,10 @@ export const useEnemyFactionChain = () => {
  * Hook that fetches enemy faction data, enriches members with FFScouter data,
  * and stores them in the global store.
  */
-export const useEnemyMembers = () => {
-	const { data: enemyFactionData, dataUpdatedAt } = useEnemyFactionData();
+export const useEnemyMembers = (refetchIntervalOverride?: number) => {
+	const { data: enemyFactionData, dataUpdatedAt } = useEnemyFactionData(
+		refetchIntervalOverride,
+	);
 	const setEnemyMembers = useGlobalStore((state) => state.setEnemyMembers);
 	const setEnemyFaction = useGlobalStore((state) => state.setEnemyFaction);
 	const setLastRefreshTime = useGlobalStore(

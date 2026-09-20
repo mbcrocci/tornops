@@ -57,6 +57,7 @@ type PrioritizedTarget = EnemyMember & {
   availableIn: number;
 };
 
+const CHAIN_WATCHER_REFETCH_INTERVAL = 5_000;
 const MAX_VIABLE_FAIR_FIGHT = 3.5;
 
 export function prioritizeTargets(
@@ -153,8 +154,10 @@ const chainUrgencyStyles: Record<
 };
 
 function ChainStatusCard() {
-  const { data, isPending, isError } = useUserFactionChain();
-  const { data: user } = useUserData();
+  const { data, isPending, isError } = useUserFactionChain(
+    CHAIN_WATCHER_REFETCH_INTERVAL,
+  );
+  const { data: user } = useUserData(CHAIN_WATCHER_REFETCH_INTERVAL);
   const chain = data?.chain;
   const remaining = useCountdown(chain?.timeout);
   const urgency = getChainUrgency(remaining);
@@ -252,7 +255,9 @@ type ObservedChainActivity = {
 };
 
 function LatestChainAttacks() {
-  const { data: chainData, isPending: isChainPending } = useUserFactionChain();
+  const { data: chainData, isPending: isChainPending } = useUserFactionChain(
+    CHAIN_WATCHER_REFETCH_INTERVAL,
+  );
   const chain = chainData?.chain;
   const hasActiveChain = Boolean(chain?.current && chain.start);
   const {
@@ -260,14 +265,20 @@ function LatestChainAttacks() {
     isPending,
     isError,
     error,
-  } = useFactionChainAttacks(hasActiveChain ? chain?.start : undefined);
+  } = useFactionChainAttacks(
+    hasActiveChain ? chain?.start : undefined,
+    CHAIN_WATCHER_REFETCH_INTERVAL,
+  );
   const attacks = attackData?.attacks ?? [];
   const isMonitoring = attackData?.scope === "monitor";
   const {
     data: chainReport,
     dataUpdatedAt,
     isPending: isReportPending,
-  } = useFactionChainReport(hasActiveChain && isMonitoring);
+  } = useFactionChainReport(
+    hasActiveChain && isMonitoring,
+    CHAIN_WATCHER_REFETCH_INTERVAL,
+  );
   const { data: factionData } = useUserFactionData();
   const previousReport = useRef<{ chainId: number; totals: Map<number, number> } | undefined>(
     undefined,
@@ -324,7 +335,7 @@ function LatestChainAttacks() {
           </div>
           <p className="text-xs text-muted-foreground">
             {isMonitoring
-              ? "Live faction activity · detected every 10 seconds"
+              ? "Live faction activity · detected every 5 seconds"
               : "Last 10 faction chain-building hits"}
           </p>
         </div>
@@ -456,9 +467,9 @@ function LatestChainAttacks() {
 }
 
 function TargetQueue() {
-  useEnemyMembers();
+  useEnemyMembers(CHAIN_WATCHER_REFETCH_INTERVAL);
 
-  const { data } = useUserFactionChain();
+  const { data } = useUserFactionChain(CHAIN_WATCHER_REFETCH_INTERVAL);
   const enemyMembers = useGlobalStore((state) => state.enemyMembers);
   const enemyFaction = useGlobalStore((state) => state.enemyFaction);
   const remaining = useCountdown(data?.chain.timeout);
