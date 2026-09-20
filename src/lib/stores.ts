@@ -70,6 +70,14 @@ export type UserFaction = {
   capacity: number;
 };
 
+export type ObservedChainActivity = {
+  id: string;
+  attackerId: number;
+  hits: number;
+  chainNumber: number;
+  attackAt: number;
+};
+
 interface GlobalState {
   refetchInterval: number;
   enemyFactionId: number | undefined;
@@ -80,6 +88,7 @@ interface GlobalState {
   userMembers: UserMember[];
   lastRefreshTime: number | undefined;
   collapsedCards: boolean;
+  chainAttackActivity: ObservedChainActivity[];
   setRefetchInterval: (refetchInterval: number) => void;
   setEnemyFactionId: (enemyFactionId?: number) => void;
   setEnemyFaction: (enemyFaction?: EnemyFaction) => void;
@@ -89,6 +98,8 @@ interface GlobalState {
   setUserMembers: (members: UserMember[]) => void;
   setLastRefreshTime: (timestamp: number) => void;
   setCollapsedCards: (collapsedCards: boolean) => void;
+  addChainAttackActivity: (activity: ObservedChainActivity[]) => void;
+  clearChainAttackActivity: () => void;
 }
 
 export const useGlobalStore = create<GlobalState>()(
@@ -107,6 +118,7 @@ export const useGlobalStore = create<GlobalState>()(
       userMembers: [],
       lastRefreshTime: undefined,
       collapsedCards: false,
+      chainAttackActivity: [],
 
       setRefetchInterval: (refetchInterval: number) => set({ refetchInterval }),
       setEnemyFactionId: (enemyFactionId?: number) => set({ enemyFactionId }),
@@ -120,6 +132,11 @@ export const useGlobalStore = create<GlobalState>()(
       setLastRefreshTime: (timestamp: number) =>
         set({ lastRefreshTime: timestamp }),
       setCollapsedCards: (collapsedCards: boolean) => set({ collapsedCards }),
+      addChainAttackActivity: (activity: ObservedChainActivity[]) =>
+        set((state) => ({
+          chainAttackActivity: [...activity, ...state.chainAttackActivity].slice(0, 10),
+        })),
+      clearChainAttackActivity: () => set({ chainAttackActivity: [] }),
     }),
     {
       name: "tornops-monitor",

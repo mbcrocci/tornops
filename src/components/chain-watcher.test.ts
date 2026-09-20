@@ -1,6 +1,19 @@
-import { describe, expect, it } from "vitest";
-import type { EnemyMember } from "@/lib/stores";
-import { prioritizeTargets } from "./chain-watcher";
+import { beforeEach, describe, expect, it } from "vitest";
+import { createJSONStorage } from "zustand/middleware";
+import type { EnemyMember, ObservedChainActivity } from "@/lib/stores";
+import { useGlobalStore } from "@/lib/stores";
+import { isStoredAttackActivityValid, prioritizeTargets } from "./chain-watcher";
+
+const storedValues = new Map<string, string>();
+const testStorage = {
+  getItem: (name: string) => storedValues.get(name) ?? null,
+  setItem: (name: string, value: string) => {
+    storedValues.set(name, value);
+  },
+  removeItem: (name: string) => {
+    storedValues.delete(name);
+  },
+};
 
 function member(id: number, fairFight?: number): EnemyMember {
   return {
@@ -42,5 +55,49 @@ describe("prioritizeTargets", () => {
 
   it("does not suggest targets after the chain expires", () => {
     expect(prioritizeTargets(members, 0, 0)).toEqual([]);
+  });
+});
+
+describe("isStoredAttackActivityValid", () => {
+  const activity = [{ chainNumber: 12 }] as ObservedChainActivity[];
+
+  it("keeps activity from the current chain", () => {
+    expect(isStoredAttackActivityValid(activity, 12)).toBe(true);
+    expect(isStoredAttackActivityValid(activity, 13)).toBe(true);
+  });
+
+  it("rejects activity ahead of the current chain", () => {
+    expect(isStoredAttackActivityValid(activity, 11)).toBe(false);
+  });
+
+  it("accepts an empty feed", () => {
+    expect(isStoredAttackActivityValid([], 0)).toBe(true);
+  });
+});
+
+describe("chain attack activity storage", () => {
+  beforeEach(() => {
+    storedValues.clear();
+    useGlobalStore.persist.setOptions({
+      storage: createJSONStorage(() => testStorage),
+    });
+    useGlobalStore.setState({ chainAttackActivity: [] });
+  });
+
+  it("persists observed attacks", () => {
+    const attack: ObservedChainActivity = {
+      id: "attack-1",
+      attackerId: 7,
+      hits: 1,
+      chainNumber: 12,
+      attackAt: 1_000,
+    };
+
+    useGlobalStore.getState().addChainAttackActivity([attack]);
+
+    const stored = JSON.parse(storedValues.get("tornops-monitor") ?? "{}") as {
+      state?: { chainAttackActivity?: ObservedChainActivity[] };
+    };
+    expect(stored.state?.chainAttackActivity).toEqual([attack]);
   });
 });

@@ -18,7 +18,11 @@ import {
   useUserFactionData,
 } from "@/hooks/use-torn";
 import { playerAttackLink, playerProfileLink } from "@/lib/links";
-import { type EnemyMember, useGlobalStore } from "@/lib/stores";
+import {
+  type EnemyMember,
+  type ObservedChainActivity,
+  useGlobalStore,
+} from "@/lib/stores";
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -253,13 +257,13 @@ function formatAttackTime(timestamp: number, now: number): string {
   return `${Math.floor(elapsed / 3600)}h ago`;
 }
 
-type ObservedChainActivity = {
-  id: string;
-  attackerId: number;
-  hits: number;
-  chainNumber: number;
-  attackAt: number;
-};
+export function isStoredAttackActivityValid(
+  activity: ObservedChainActivity[],
+  currentChain: number,
+): boolean {
+  const latestAttack = activity[0];
+  return !latestAttack || latestAttack.chainNumber <= currentChain;
+}
 
 function LatestChainAttacks() {
   const { data: chainData, isPending: isChainPending } = useUserFactionChain(
@@ -290,8 +294,16 @@ function LatestChainAttacks() {
   const previousReport = useRef<{ chainId: number; totals: Map<number, number> } | undefined>(
     undefined,
   );
-  const [activity, setActivity] = useState<ObservedChainActivity[]>([]);
+  const activity = useGlobalStore((state) => state.chainAttackActivity);
+  const addChainAttackActivity = useGlobalStore((state) => state.addChainAttackActivity);
+  const clearChainAttackActivity = useGlobalStore((state) => state.clearChainAttackActivity);
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+
+  useEffect(() => {
+    if (chain && !isStoredAttackActivityValid(activity, chain.current)) {
+      clearChainAttackActivity();
+    }
+  }, [activity, chain, clearChainAttackActivity]);
 
   useEffect(() => {
     if (!chainReport || !chain || chain.current !== chainReport.details.chain) return;
@@ -302,8 +314,10 @@ function LatestChainAttacks() {
     const previous = previousReport.current;
     previousReport.current = { chainId: chainReport.id, totals };
 
-    if (!previous || previous.chainId !== chainReport.id) {
-      setActivity([]);
+    if (!previous) return;
+
+    if (previous.chainId !== chainReport.id) {
+      clearChainAttackActivity();
       return;
     }
 
@@ -326,9 +340,15 @@ function LatestChainAttacks() {
     });
 
     if (changes.length > 0) {
-      setActivity((current) => [...changes, ...current].slice(0, 10));
+      addChainAttackActivity(changes);
     }
-  }, [chain, chainReport, dataUpdatedAt]);
+  }, [
+    addChainAttackActivity,
+    chain,
+    chainReport,
+    clearChainAttackActivity,
+    dataUpdatedAt,
+  ]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
