@@ -60,6 +60,12 @@ type PrioritizedTarget = EnemyMember & {
 const CHAIN_WATCHER_REFETCH_INTERVAL = 5_000;
 const MAX_VIABLE_FAIR_FIGHT = 3.5;
 
+const activityStatusStyles = {
+  Online: { dot: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400" },
+  Idle: { dot: "bg-amber-500", text: "text-amber-600 dark:text-amber-400" },
+  Offline: { dot: "bg-slate-400", text: "text-muted-foreground" },
+} as const;
+
 export function prioritizeTargets(
   members: EnemyMember[],
   chainSecondsRemaining: number,
@@ -251,6 +257,7 @@ type ObservedChainActivity = {
   id: string;
   attackerId: number;
   hits: number;
+  chainNumber: number;
   attackAt: number;
 };
 
@@ -306,7 +313,15 @@ function LatestChainAttacks() {
     const changes = chainReport.attackers.flatMap((attacker) => {
       const hits = attacker.attacks.total - (previous.totals.get(attacker.id) ?? 0);
       return hits > 0
-        ? [{ id: `${dataUpdatedAt}-${attacker.id}`, attackerId: attacker.id, hits, attackAt }]
+        ? [
+            {
+              id: `${dataUpdatedAt}-${attacker.id}`,
+              attackerId: attacker.id,
+              hits,
+              chainNumber: chainReport.details.chain,
+              attackAt,
+            },
+          ]
         : [];
     });
 
@@ -372,10 +387,10 @@ function LatestChainAttacks() {
                 >
                   <div>
                     <div className="font-mono text-sm font-bold tabular-nums text-primary">
-                      +{event.hits}
+                      #{event.chainNumber.toLocaleString()}
                     </div>
                     <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      {event.hits === 1 ? "Hit" : "Hits"}
+                      Chain
                     </div>
                   </div>
                   <div className="min-w-0">
@@ -534,6 +549,21 @@ function TargetQueue() {
                     {target.name}
                   </a>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1 font-medium",
+                        activityStatusStyles[target.last_action.status].text,
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "size-2 rounded-full",
+                          activityStatusStyles[target.last_action.status].dot,
+                        )}
+                        aria-hidden
+                      />
+                      {target.last_action.status}
+                    </span>
                     <span
                       className={
                         target.availability === "alive"
