@@ -9,7 +9,10 @@ import {
 import type { User } from "@/lib/user";
 import { useFFScouterData } from "./use-ffscouter";
 
-const getUserData = async (key: string) => {
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+	typeof value === "object" && value !== null;
+
+const getUserData = async (key: string): Promise<User> => {
 	if (!key) {
 		throw new Error("No key provided");
 	}
@@ -20,7 +23,34 @@ const getUserData = async (key: string) => {
 	params.set("key", key);
 
 	const response = await fetch(`${url}?${params.toString()}`);
-	return response.json() as Promise<User>;
+	if (!response.ok) {
+		throw new Error(`Torn API request failed (${response.status})`);
+	}
+
+	const data: unknown = await response.json();
+	if (
+		!isRecord(data) ||
+		!isRecord(data.life) ||
+		typeof data.life.current !== "number" ||
+		typeof data.life.maximum !== "number" ||
+		!isRecord(data.status) ||
+		typeof data.status.state !== "string" ||
+		!isRecord(data.cooldowns) ||
+		typeof data.cooldowns.medical !== "number" ||
+		(data.energy !== undefined &&
+			(!isRecord(data.energy) ||
+				typeof data.energy.current !== "number" ||
+				typeof data.energy.maximum !== "number"))
+	) {
+		const apiError = isRecord(data) && isRecord(data.error) ? data.error.error : null;
+		const message =
+			typeof apiError === "string"
+				? apiError
+				: "Torn API returned incomplete user data";
+		throw new Error(message);
+	}
+
+	return data as User;
 };
 
 const getUserFaction = async (key: string) => {

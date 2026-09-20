@@ -27,24 +27,41 @@ function formatDuration(seconds: number): string {
 export function UserStatus() {
   const collapsedCards = useGlobalStore((state) => state.collapsedCards);
   const setCollapsedCards = useGlobalStore((state) => state.setCollapsedCards);
-  const { data: userData } = useUserData();
+  const { data: userData, error } = useUserData();
 
-  const healthPercentage = userData ? (userData.life.current / userData.life.maximum) * 100 : 0;
-  const energyPercentage = userData?.energy ? (userData.energy.current / userData.energy.maximum) * 100 : 0;
+  if (error) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Your Status</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-destructive">
+          Unable to load your status: {error.message}
+        </CardContent>
+      </Card>
+    );
+  }
 
-  const medicalCooldownRemaining = userData?.cooldowns.medical || 0;
+  // API errors are returned as JSON with a successful HTTP status. Do not try to
+  // render an incomplete response, including one left in the query cache.
+  if (!userData?.life || !userData.status || !userData.cooldowns) return null;
+
+  const healthPercentage = (userData.life.current / userData.life.maximum) * 100;
+  const energyPercentage = userData.energy
+    ? (userData.energy.current / userData.energy.maximum) * 100
+    : 0;
+
+  const medicalCooldownRemaining = userData.cooldowns.medical || 0;
 
   // Standard medical cooldown is 8 hours (28800 seconds)
   // If remaining time is greater than 8h, use it as the total (cooldown just started with extended time)
   const standardMedicalCooldown = 8 * 3600; // 8 hours
   const medicalCooldownTotal = Math.max(standardMedicalCooldown, medicalCooldownRemaining);
-  const medicalCooldownElapsed = userData?.cooldowns.medical || 0;
+  const medicalCooldownElapsed = userData.cooldowns.medical || 0;
   //medicalCooldownTotal - medicalCooldownRemaining;
 
   const medicalCooldownPercentage =
     medicalCooldownTotal > 0 ? (medicalCooldownElapsed / medicalCooldownTotal) * 100 : 0;
-
-  if (!userData) return null;
 
   return (
     <Card className="w-full">

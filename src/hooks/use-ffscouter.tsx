@@ -17,7 +17,16 @@ const getFFScouterData = async (key: string, targets: number[]) => {
   params.set("targets", targets.join(","));
 
   const response = await fetch(`${url}?${params.toString()}`);
-  return response.json() as Promise<FFScouterData[]>;
+  if (!response.ok) {
+    throw new Error(`FFScouter request failed with status ${response.status}`);
+  }
+
+  const data: unknown = await response.json();
+  if (!Array.isArray(data)) {
+    throw new Error("FFScouter returned an invalid response");
+  }
+
+  return data as FFScouterData[];
 };
 
 export const useFFScouterData = (targets: number[]) => {
@@ -26,10 +35,11 @@ export const useFFScouterData = (targets: number[]) => {
   return useQuery({
     queryKey: ["ffscouter-data", ffScouterKey, targets],
     queryFn: () => {
-      if (!ffScouterKey) return [];
+      if (!ffScouterKey || targets.length === 0) return [];
 
       return getFFScouterData(ffScouterKey, targets);
     },
+    enabled: Boolean(ffScouterKey) && targets.length > 0,
     refetchInterval: refetchInterval,
   });
 };
