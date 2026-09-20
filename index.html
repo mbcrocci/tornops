@@ -6,6 +6,31 @@
     <link rel="icon" href="/favicon.ico" />
     <meta name="theme-color" content="#000000" />
     <meta name="description" content="TornOps - A Torn raked war monitor" />
+    <script>
+      (() => {
+        try {
+          const storedMode = localStorage.getItem("vite-ui-theme");
+          const mode = ["light", "dark", "system"].includes(storedMode) ? storedMode : "system";
+          const storedPreset = localStorage.getItem("tornops-theme-preset");
+          const preset = ["default", "astrovista"].includes(storedPreset)
+            ? storedPreset
+            : "default";
+          const resolvedMode =
+            mode === "system"
+              ? matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light"
+              : mode;
+          const root = document.documentElement;
+
+          root.classList.add(resolvedMode);
+          root.dataset.theme = preset;
+        } catch {
+          document.documentElement.classList.add("light");
+          document.documentElement.dataset.theme = "default";
+        }
+      })();
+    </script>
     <link rel="apple-touch-icon" href="/logo.png" />
     <link rel="manifest" href="/manifest.json" />
     <title>TornOps</title>
