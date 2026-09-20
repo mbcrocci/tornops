@@ -1,6 +1,11 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
-import type { Faction, FactionChain } from "@/lib/faction";
+import type {
+	Faction,
+	FactionAttack,
+	FactionChain,
+	FactionChainReport,
+} from "@/lib/faction";
 import {
 	type EnemyMember,
 	useCredentialsStore,
@@ -70,6 +75,97 @@ const getUserFactionChain = async (key: string) => {
 
 	const response = await fetch(`${url}?${params.toString()}`);
 	return response.json() as Promise<{ chain: FactionChain }>;
+};
+
+class TornApiError extends Error {
+	constructor(
+		message: string,
+		readonly code: number | undefined,
+	) {
+		super(message);
+	}
+}
+
+const keysWithoutFactionAttackAccess = new Set<string>();
+
+const getChainAttacks = async (
+	key: string,
+	chainStart: number,
+): Promise<{ attacks: FactionAttack[]; scope: "faction" | "monitor" }> => {
+	const fetchAttacks = async (scope: "faction" | "user") => {
+		const url = `https://api.torn.com/v2/${scope}/attacks`;
+		const params = new URLSearchParams();
+		params.set("filters", "outgoing");
+		params.set("from", chainStart.toString());
+		params.set("limit", "100");
+		params.set("sort", "DESC");
+		params.set("key", key);
+
+		const response = await fetch(`${url}?${params.toString()}`);
+		const data: unknown = await response.json();
+
+		if (!response.ok) {
+			throw new Error(`Torn API request failed (${response.status})`);
+		}
+		if (isRecord(data) && isRecord(data.error)) {
+			const message = data.error.error;
+			throw new TornApiError(
+				typeof message === "string" ? message : "Torn API returned an error",
+				typeof data.error.code === "number" ? data.error.code : undefined,
+			);
+		}
+		if (!isRecord(data) || !Array.isArray(data.attacks)) {
+			throw new Error("Torn API returned incomplete attack data");
+		}
+
+		return (data.attacks as FactionAttack[])
+			.filter(
+				(attack) =>
+					typeof attack.chain === "number" &&
+					attack.chain > 0 &&
+					!attack.is_interrupted,
+			)
+			.slice(0, 10);
+	};
+
+	if (!keysWithoutFactionAttackAccess.has(key)) {
+		try {
+			return { attacks: await fetchAttacks("faction"), scope: "faction" };
+		} catch (error) {
+			if (
+				!(error instanceof TornApiError) ||
+				(error.code !== 7 && error.code !== 16)
+			) {
+				throw error;
+			}
+			keysWithoutFactionAttackAccess.add(key);
+		}
+	}
+
+	return { attacks: [], scope: "monitor" };
+};
+
+const getFactionChainReport = async (key: string): Promise<FactionChainReport> => {
+	const url = "https://api.torn.com/v2/faction/chainreport";
+	const params = new URLSearchParams();
+	params.set("key", key);
+
+	const response = await fetch(`${url}?${params.toString()}`);
+	const data: unknown = await response.json();
+	if (!response.ok) {
+		throw new Error(`Torn API request failed (${response.status})`);
+	}
+	if (isRecord(data) && isRecord(data.error)) {
+		const message = data.error.error;
+		throw new Error(
+			typeof message === "string" ? message : "Torn API returned an error",
+		);
+	}
+	if (!isRecord(data) || !isRecord(data.chainreport)) {
+		throw new Error("Torn API returned incomplete chain report data");
+	}
+
+	return data.chainreport as FactionChainReport;
 };
 
 const getUserFactionData = async (key: string) => {
@@ -184,6 +280,30 @@ export const useUserFactionChain = () => {
 	return useQuery({
 		queryKey: ["user-faction-chain", key],
 		queryFn: () => getUserFactionChain(key),
+		refetchInterval: refetchInterval,
+	});
+};
+
+export const useFactionChainReport = (enabled: boolean) => {
+	const key = useCredentialsStore((state) => state.publicKey ?? "");
+	const refetchInterval = useGlobalStore((state) => state.refetchInterval);
+
+	return useQuery({
+		queryKey: ["faction-chain-report", key],
+		queryFn: () => getFactionChainReport(key),
+		enabled: Boolean(key && enabled),
+		refetchInterval: refetchInterval,
+	});
+};
+
+export const useFactionChainAttacks = (chainStart: number | undefined) => {
+	const key = useCredentialsStore((state) => state.publicKey ?? "");
+	const refetchInterval = useGlobalStore((state) => state.refetchInterval);
+
+	return useQuery({
+		queryKey: ["faction-chain-attacks", chainStart, key],
+		queryFn: () => getChainAttacks(key, chainStart ?? 0),
+		enabled: Boolean(key && chainStart),
 		refetchInterval: refetchInterval,
 	});
 };

@@ -96,3 +96,39 @@ export type FactionChain = {
   start: number;
   end: number;
 };
+
+export type AttackPlayer = {
+  id: number;
+  name: string;
+  level: number;
+  faction: {
+    id: number;
+    name: string;
+  } | null;
+};
+
+export type FactionAttack = {
+  id: number;
+  code: string;
+  started: number;
+  ended: number;
+  attacker: AttackPlayer | null;
+  defender: AttackPlayer;
+  result: string;
+  respect_gain: number;
+  chain: number | null;
+  is_interrupted: boolean;
+};
+
+export type FactionChainReport = {
+  id: number;
+  details: {
+    chain: number;
+  };
+  attackers: Array<{
+    id: number;
+    attacks: {
+      total: number;
+    };
+  }>;
+};

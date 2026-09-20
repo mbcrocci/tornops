@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { useEnemyFactionChain, useUserFactionChain } from "@/hooks/use-torn";
 import type { FactionChain } from "@/lib/faction";
 import { useEffect, useState } from "react";
@@ -5,8 +6,9 @@ import { Card, CardContent, CardHeader } from "./ui/card";
 import { Progress } from "./ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 import { Button } from "./ui/button";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Radio } from "lucide-react";
 import { useGlobalStore } from "@/lib/stores";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 // Helper function to format time duration
 function formatTime(seconds: number): string {
@@ -28,7 +30,7 @@ export function UserChain() {
   const { data: userFactionChain } = useUserFactionChain();
   if (!userFactionChain) return null;
 
-  return <Chain chain={userFactionChain?.chain} />;
+  return <Chain chain={userFactionChain.chain} />;
 }
 
 export function EnemyChain() {
@@ -51,13 +53,30 @@ export function Chains() {
               <TabsTrigger value="user">User Chain</TabsTrigger>
               <TabsTrigger value="enemy">Enemy Chain</TabsTrigger>
             </TabsList>
-            <Button variant="ghost" size="icon" onClick={() => setCollapsedCards(!collapsedCards)}>
-              {collapsedCards ? (
-                <ChevronUp className="w-4 h-4" />
-              ) : (
-                <ChevronDown className="w-4 h-4" />
-              )}
-            </Button>
+            <div className="flex items-center">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button asChild variant="ghost" size="icon">
+                    <Link to="/chain-watcher" aria-label="Open chain watcher">
+                      <Radio className="size-4" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Open chain watcher</TooltipContent>
+              </Tooltip>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setCollapsedCards(!collapsedCards)}
+                aria-label={collapsedCards ? "Expand chain card" : "Collapse chain card"}
+              >
+                {collapsedCards ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
           </div>
         </CardHeader>
         {!collapsedCards && (
