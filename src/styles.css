@@ -62,6 +62,30 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
+@keyframes chain-critical-flash {
+  0%,
+  100% {
+    background-color: color-mix(in oklab, #ef4444 8%, var(--card));
+    box-shadow: 0 0 0 1px color-mix(in oklab, #ef4444 55%, transparent);
+  }
+  50% {
+    background-color: color-mix(in oklab, #ef4444 22%, var(--card));
+    box-shadow: 0 0 1.25rem color-mix(in oklab, #ef4444 35%, transparent);
+  }
+}
+
+.chain-critical-flash {
+  animation: chain-critical-flash 900ms ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chain-critical-flash {
+    animation: none;
+    background-color: color-mix(in oklab, #ef4444 14%, var(--card));
+    box-shadow: 0 0 0 1px color-mix(in oklab, #ef4444 55%, transparent);
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

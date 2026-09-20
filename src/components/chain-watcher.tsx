@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import {
+  AlertTriangle,
   Crosshair,
   ExternalLink,
   HeartPulse,
@@ -18,6 +19,7 @@ import {
 } from "@/hooks/use-torn";
 import { playerAttackLink, playerProfileLink } from "@/lib/links";
 import { type EnemyMember, useGlobalStore } from "@/lib/stores";
+import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 
@@ -55,15 +57,26 @@ type PrioritizedTarget = EnemyMember & {
   availableIn: number;
 };
 
+const MAX_VIABLE_FAIR_FIGHT = 3.5;
+
 export function prioritizeTargets(
   members: EnemyMember[],
   chainSecondsRemaining: number,
   nowInSeconds: number,
 ): PrioritizedTarget[] {
-  if (chainSecondsRemaining <= 60) return [];
+  if (chainSecondsRemaining <= 0) return [];
+
+  const prioritizeSafestTarget = chainSecondsRemaining < 45;
 
   return members
     .flatMap((member): PrioritizedTarget[] => {
+      if (
+        member.ffs?.fair_fight !== undefined &&
+        member.ffs.fair_fight > MAX_VIABLE_FAIR_FIGHT
+      ) {
+        return [];
+      }
+
       if (member.status.state === "Okay") {
         return [{ ...member, availability: "alive", availableIn: 0 }];
       }
@@ -82,9 +95,13 @@ export function prioritizeTargets(
         return a.availability === "alive" ? -1 : 1;
       }
 
-      const ffA = a.ffs?.fair_fight ?? Number.POSITIVE_INFINITY;
-      const ffB = b.ffs?.fair_fight ?? Number.POSITIVE_INFINITY;
-      if (ffA !== ffB) return ffA - ffB;
+      const ffA = a.ffs?.fair_fight;
+      const ffB = b.ffs?.fair_fight;
+      if (ffA === undefined && ffB !== undefined) return 1;
+      if (ffA !== undefined && ffB === undefined) return -1;
+      if (ffA !== undefined && ffB !== undefined && ffA !== ffB) {
+        return prioritizeSafestTarget ? ffA - ffB : ffB - ffA;
+      }
 
       if (a.availability === "soon" && b.availability === "soon") {
         return a.availableIn - b.availableIn;
@@ -96,29 +113,82 @@ export function prioritizeTargets(
     .slice(0, 5);
 }
 
+type ChainUrgency = "normal" | "warning" | "danger" | "critical";
+
+export function getChainUrgency(seconds: number): ChainUrgency {
+  if (seconds > 0 && seconds < 30) return "critical";
+  if (seconds > 0 && seconds < 60) return "danger";
+  if (seconds > 0 && seconds < 120) return "warning";
+  return "normal";
+}
+
+const chainUrgencyStyles: Record<
+  ChainUrgency,
+  { card: string; bar: string; text: string; label: string }
+> = {
+  normal: {
+    card: "border-primary/25",
+    bar: "bg-primary",
+    text: "text-primary",
+    label: "Live chain",
+  },
+  warning: {
+    card: "border-amber-500/70 bg-amber-500/[0.07] shadow-sm shadow-amber-500/10",
+    bar: "bg-amber-500",
+    text: "text-amber-700 dark:text-amber-300",
+    label: "Chain warning",
+  },
+  danger: {
+    card: "border-red-500/80 bg-red-500/[0.09] shadow-sm shadow-red-500/15",
+    bar: "bg-red-500",
+    text: "text-red-700 dark:text-red-300",
+    label: "Chain danger",
+  },
+  critical: {
+    card: "chain-critical-flash border-red-500",
+    bar: "bg-red-500",
+    text: "text-red-700 dark:text-red-300",
+    label: "Critical — hit now",
+  },
+};
+
 function ChainStatusCard() {
   const { data, isPending, isError } = useUserFactionChain();
   const { data: user } = useUserData();
   const chain = data?.chain;
   const remaining = useCountdown(chain?.timeout);
+  const urgency = getChainUrgency(remaining);
+  const urgencyStyles = chainUrgencyStyles[urgency];
   const progress = chain?.max ? (chain.current / chain.max) * 100 : 0;
   const energy = user?.energy.current;
   const maximumEnergy = user?.energy.maximum;
   const hitsLeft = energy === undefined ? undefined : Math.floor(energy / 25);
+  const StatusIcon = urgency === "normal" ? Radio : AlertTriangle;
 
   return (
-    <Card className="border-primary/25 p-0">
+    <Card
+      className={cn("p-0 transition-colors duration-300", urgencyStyles.card)}
+      data-chain-urgency={urgency}
+    >
       <div className="mx-4 mt-3 h-1 overflow-hidden rounded-full bg-muted">
         <div
-          className="h-full rounded-full bg-primary transition-[width] duration-500"
+          className={cn(
+            "h-full rounded-full transition-[width,background-color] duration-500",
+            urgencyStyles.bar,
+          )}
           style={{ width: `${Math.min(progress, 100)}%` }}
         />
       </div>
       <CardContent className="grid gap-5 p-5 pt-2 md:grid-cols-[1fr_auto] md:items-end">
         <div>
-          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-            <Radio className="size-3.5" aria-hidden />
-            Live chain
+          <div
+            className={cn(
+              "mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em]",
+              urgencyStyles.text,
+            )}
+          >
+            <StatusIcon className="size-3.5" aria-hidden />
+            {urgencyStyles.label}
           </div>
           {isPending ? (
             <p className="text-muted-foreground">Loading chain…</p>
@@ -126,12 +196,15 @@ function ChainStatusCard() {
             <p className="text-destructive">Chain data is unavailable.</p>
           ) : (
             <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-              <span className="font-mono text-4xl font-bold tabular-nums sm:text-5xl">
+              <span
+                className={cn(
+                  "font-mono text-4xl font-bold tabular-nums transition-colors sm:text-5xl",
+                  urgency !== "normal" && urgencyStyles.text,
+                )}
+              >
                 {formatDuration(remaining)}
               </span>
-              <span className="text-sm text-muted-foreground">
-                until the chain expires
-              </span>
+              <span className="text-sm text-muted-foreground">until the chain expires</span>
             </div>
           )}
         </div>
@@ -182,17 +255,23 @@ function LatestChainAttacks() {
   const { data: chainData, isPending: isChainPending } = useUserFactionChain();
   const chain = chainData?.chain;
   const hasActiveChain = Boolean(chain?.current && chain.start);
-  const { data: attackData, isPending, isError, error } = useFactionChainAttacks(
-    hasActiveChain ? chain?.start : undefined,
-  );
+  const {
+    data: attackData,
+    isPending,
+    isError,
+    error,
+  } = useFactionChainAttacks(hasActiveChain ? chain?.start : undefined);
   const attacks = attackData?.attacks ?? [];
   const isMonitoring = attackData?.scope === "monitor";
-  const { data: chainReport, dataUpdatedAt, isPending: isReportPending } =
-    useFactionChainReport(hasActiveChain && isMonitoring);
+  const {
+    data: chainReport,
+    dataUpdatedAt,
+    isPending: isReportPending,
+  } = useFactionChainReport(hasActiveChain && isMonitoring);
   const { data: factionData } = useUserFactionData();
-  const previousReport = useRef<
-    { chainId: number; totals: Map<number, number> } | undefined
-  >(undefined);
+  const previousReport = useRef<{ chainId: number; totals: Map<number, number> } | undefined>(
+    undefined,
+  );
   const [activity, setActivity] = useState<ObservedChainActivity[]>([]);
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
 
@@ -251,12 +330,8 @@ function LatestChainAttacks() {
         </div>
       </CardHeader>
       <CardContent className="px-0">
-        {isChainPending ||
-        (hasActiveChain && isPending) ||
-        (isMonitoring && isReportPending) ? (
-          <p className="px-5 py-8 text-center text-sm text-muted-foreground">
-            Loading attacks…
-          </p>
+        {isChainPending || (hasActiveChain && isPending) || (isMonitoring && isReportPending) ? (
+          <p className="px-5 py-8 text-center text-sm text-muted-foreground">Loading attacks…</p>
         ) : !hasActiveChain ? (
           <p className="px-5 py-8 text-center text-sm text-muted-foreground">
             Chain attacks will appear here when a chain is active.
@@ -345,7 +420,9 @@ function LatestChainAttacks() {
                     ) : (
                       <span className="truncate font-semibold">Stealthed attacker</span>
                     )}
-                    <span className="shrink-0 text-muted-foreground" aria-hidden>→</span>
+                    <span className="shrink-0 text-muted-foreground" aria-hidden>
+                      →
+                    </span>
                     <a
                       href={playerProfileLink(attack.defender.id)}
                       target="_blank"
@@ -454,7 +531,10 @@ function TargetQueue() {
                       }
                     >
                       {target.availability === "alive" ? (
-                        <><HeartPulse className="mr-1 inline size-3" aria-hidden />Alive</>
+                        <>
+                          <HeartPulse className="mr-1 inline size-3" aria-hidden />
+                          Alive
+                        </>
                       ) : (
                         `Out in ${formatDuration(target.availableIn)}`
                       )}
@@ -466,7 +546,9 @@ function TargetQueue() {
                   <div className="font-mono font-bold tabular-nums">
                     {target.ffs?.fair_fight?.toFixed(2) ?? "—"}
                   </div>
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">FF</div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    FF
+                  </div>
                 </div>
                 <a
                   href={playerAttackLink(target.id)}
@@ -491,7 +573,9 @@ export function ChainWatcher() {
     <main className="container mx-auto max-w-4xl p-3 sm:p-6">
       <div className="mb-5 flex items-center justify-between gap-3 pr-11 sm:pr-0">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Operations</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+            Operations
+          </p>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Chain watcher</h1>
         </div>
         <Button asChild variant="outline" size="sm">
