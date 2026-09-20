@@ -3,7 +3,7 @@ export function playerProfileLink(playerId: number): string {
 }
 
 export function playerAttackLink(playerId: number): string {
-  return `https://www.torn.com/loader.php?sid=attack&user2ID=${playerId}`;
+  return `https://www.torn.com/page.php?sid=attack&user2ID=${playerId}`;
 }
 
 export function factionArmoryLink(): string {
