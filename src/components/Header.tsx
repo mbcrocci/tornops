@@ -1,18 +1,24 @@
 import { Link } from "@tanstack/react-router";
-import { Activity, Swords } from "lucide-react";
+import { Activity, Radio, Swords } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
   { to: "/", label: "War room", icon: Swords },
   { to: "/chain-watcher", label: "Chain watcher", icon: Activity },
   { to: "/attack-history", label: "Attack history", icon: Swords },
+  { to: "/online-activity", label: "Online activity", icon: Radio },
 ] as const;
 
 export default function Header() {
   return (
     <header className="border-b bg-background/95 pr-14 backdrop-blur">
-      <nav className="mx-auto flex h-12 max-w-[1500px] items-center gap-1 overflow-x-auto px-3 sm:px-6" aria-label="Main navigation">
-        <span className="mr-3 hidden font-mono text-xs font-bold tracking-[0.18em] sm:inline">TORNOPS</span>
+      <nav
+        className="mx-auto flex h-12 max-w-[1500px] items-center gap-1 overflow-x-auto px-3 sm:px-6"
+        aria-label="Main navigation"
+      >
+        <span className="mr-3 hidden font-mono text-xs font-bold tracking-[0.18em] sm:inline">
+          TORNOPS
+        </span>
         {links.map(({ to, label, icon: Icon }) => (
           <Link
             key={to}
