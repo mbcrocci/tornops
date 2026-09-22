@@ -3,6 +3,7 @@ import { useEffect, useMemo } from "react";
 import type {
 	Faction,
 	FactionAttack,
+	FactionAttackHistory,
 	FactionChain,
 	FactionChainReport,
 } from "@/lib/faction";
@@ -143,6 +144,61 @@ const getChainAttacks = async (
 	}
 
 	return { attacks: [], scope: "monitor" };
+};
+
+const getFactionAttackHistory = async (
+	key: string,
+	from: number,
+	to: number,
+): Promise<FactionAttackHistory> => {
+	const attacks = new Map<number, FactionAttack>();
+	let nextUrl: string | null = null;
+	let page = 0;
+
+	do {
+		const url = new URL(nextUrl ?? "https://api.torn.com/v2/faction/attacks");
+		if (!nextUrl) {
+			url.searchParams.set("filters", "outgoing");
+			url.searchParams.set("from", from.toString());
+			url.searchParams.set("limit", "100");
+			url.searchParams.set("sort", "ASC");
+		}
+		// Torn's pagination links omit the original upper bound.
+		url.searchParams.set("to", to.toString());
+
+		const response = await fetch(url, {
+			headers: { Authorization: `ApiKey ${key}` },
+		});
+		const data: unknown = await response.json();
+
+		if (!response.ok) {
+			throw new Error(`Torn API request failed (${response.status})`);
+		}
+		if (isRecord(data) && isRecord(data.error)) {
+			const message = data.error.error;
+			throw new TornApiError(
+				typeof message === "string" ? message : "Torn API returned an error",
+				typeof data.error.code === "number" ? data.error.code : undefined,
+			);
+		}
+		if (!isRecord(data) || !Array.isArray(data.attacks)) {
+			throw new Error("Torn API returned incomplete attack data");
+		}
+
+		for (const attack of data.attacks as FactionAttack[]) {
+			attacks.set(attack.id, attack);
+		}
+
+		const metadata = isRecord(data._metadata) ? data._metadata : null;
+		const links = metadata && isRecord(metadata.links) ? metadata.links : null;
+		nextUrl = links && typeof links.next === "string" ? links.next : null;
+		page += 1;
+	} while (nextUrl && page < 50);
+
+	return {
+		attacks: [...attacks.values()].sort((a, b) => a.ended - b.ended),
+		truncated: Boolean(nextUrl),
+	};
 };
 
 const getFactionChainReport = async (key: string): Promise<FactionChainReport> => {
@@ -311,6 +367,18 @@ export const useFactionChainAttacks = (
 		queryFn: () => getChainAttacks(key, chainStart ?? 0),
 		enabled: Boolean(key && chainStart),
 		refetchInterval: refetchIntervalOverride ?? refetchInterval,
+	});
+};
+
+export const useFactionAttackHistory = (from: number, to: number) => {
+	const key = useCredentialsStore((state) => state.publicKey ?? "");
+
+	return useQuery({
+		queryKey: ["faction-attack-history", from, to, key],
+		queryFn: () => getFactionAttackHistory(key, from, to),
+		enabled: Boolean(key && from && to && from < to),
+		staleTime: 60_000,
+		retry: false,
 	});
 };
 

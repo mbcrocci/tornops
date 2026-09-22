@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ChainWatcherRouteImport } from './routes/chain-watcher'
+import { Route as AttackHistoryRouteImport } from './routes/attack-history'
 import { Route as IndexRouteImport } from './routes/index'
 
 const ChainWatcherRoute = ChainWatcherRouteImport.update({
   id: '/chain-watcher',
   path: '/chain-watcher',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AttackHistoryRoute = AttackHistoryRouteImport.update({
+  id: '/attack-history',
+  path: '/attack-history',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -25,27 +31,31 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/attack-history': typeof AttackHistoryRoute
   '/chain-watcher': typeof ChainWatcherRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/attack-history': typeof AttackHistoryRoute
   '/chain-watcher': typeof ChainWatcherRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/attack-history': typeof AttackHistoryRoute
   '/chain-watcher': typeof ChainWatcherRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/chain-watcher'
+  fullPaths: '/' | '/attack-history' | '/chain-watcher'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/chain-watcher'
-  id: '__root__' | '/' | '/chain-watcher'
+  to: '/' | '/attack-history' | '/chain-watcher'
+  id: '__root__' | '/' | '/attack-history' | '/chain-watcher'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AttackHistoryRoute: typeof AttackHistoryRoute
   ChainWatcherRoute: typeof ChainWatcherRoute
 }
 
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/chain-watcher'
       fullPath: '/chain-watcher'
       preLoaderRoute: typeof ChainWatcherRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/attack-history': {
+      id: '/attack-history'
+      path: '/attack-history'
+      fullPath: '/attack-history'
+      preLoaderRoute: typeof AttackHistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -70,6 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AttackHistoryRoute: AttackHistoryRoute,
   ChainWatcherRoute: ChainWatcherRoute,
 }
 export const routeTree = rootRouteImport

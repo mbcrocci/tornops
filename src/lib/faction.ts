@@ -116,8 +116,18 @@ export type FactionAttack = {
   defender: AttackPlayer;
   result: string;
   respect_gain: number;
+  respect_loss: number;
   chain: number | null;
   is_interrupted: boolean;
+  is_stealthed: boolean;
+  is_raid: boolean;
+  is_ranked_war: boolean;
+  is_territory_war: boolean;
+};
+
+export type FactionAttackHistory = {
+  attacks: FactionAttack[];
+  truncated: boolean;
 };
 
 export type FactionChainReport = {
