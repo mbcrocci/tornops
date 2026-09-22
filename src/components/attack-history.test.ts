@@ -41,10 +41,7 @@ function attack(
 describe("analyzeAttacks", () => {
   it("groups activity in the selected timezone", () => {
     const result = analyzeAttacks(
-      [
-        attack(1, "2026-09-20T23:30:00Z", 10),
-        attack(2, "2026-09-21T00:30:00Z", 11),
-      ],
+      [attack(1, "2026-09-20T23:30:00Z", 10), attack(2, "2026-09-21T00:30:00Z", 11)],
       "America/New_York",
     );
 
@@ -69,6 +66,32 @@ describe("analyzeAttacks", () => {
       activeDays: 2,
       rankedWarHits: 1,
       peakHours: [10, 18],
+    });
+  });
+
+  it("scores planning windows by unique members across active days", () => {
+    const result = analyzeAttacks(
+      [
+        attack(1, "2026-09-20T10:00:00Z", 10),
+        attack(2, "2026-09-20T10:15:00Z", 11),
+        attack(3, "2026-09-21T10:30:00Z", 10),
+        attack(4, "2026-09-22T20:00:00Z", 12),
+      ],
+      "UTC",
+    );
+
+    expect(result.scheduleWindows[10]).toMatchObject({
+      medianMembers: 1,
+      averageMembers: 1,
+      bestDayMembers: 2,
+      daysWithCoverage: 2,
+      totalDays: 3,
+    });
+    expect(result.members.find((member) => member.id === 10)?.reliableWindow).toMatchObject({
+      startHour: 10,
+      daysSeen: 2,
+      totalDays: 3,
+      reliability: 2 / 3,
     });
   });
 });
