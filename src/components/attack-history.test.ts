@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { rankedWarsFromCache } from "@/hooks/use-torn";
 import type { FactionAttack } from "@/lib/faction";
 import { analyzeAttacks } from "./attack-history";
 
@@ -93,5 +94,40 @@ describe("analyzeAttacks", () => {
       totalDays: 3,
       reliability: 2 / 3,
     });
+  });
+});
+
+describe("rankedWarsFromCache", () => {
+  it("rebuilds the war selector without faction API data", () => {
+    const cachedAttack = attack(1, "2026-09-20T10:00:00Z", 10, {
+      is_ranked_war: true,
+      defender: {
+        id: 20,
+        name: "Opponent",
+        level: 50,
+        faction: { id: 2, name: "Other faction" },
+      },
+    });
+
+    expect(
+      rankedWarsFromCache([
+        {
+          range: { id: 123, from: 1_758_340_800, to: 1_758_427_201 },
+          attacks: [cachedAttack],
+        },
+      ]),
+    ).toEqual([
+      {
+        id: 123,
+        start: 1_758_340_800,
+        end: 1_758_427_200,
+        target: 0,
+        winner: null,
+        factions: [
+          { id: 1, name: "Test faction", score: 0, chain: 0 },
+          { id: 2, name: "Other faction", score: 0, chain: 0 },
+        ],
+      },
+    ]);
   });
 });

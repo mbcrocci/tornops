@@ -394,9 +394,10 @@ export function AttackHistory() {
   const [timeZone, setTimeZone] = useState("local");
   const [selectedWarIds, setSelectedWarIds] = useState<number[] | null>(null);
   const [memberSearch, setMemberSearch] = useState("");
-  const factionQuery = useUserFactionData();
   const warsQuery = useFactionRankedWars();
-  const wars = warsQuery.data ?? [];
+  const usingCachedWars = warsQuery.data?.source === "cache";
+  const factionQuery = useUserFactionData(warsQuery.isSuccess && !usingCachedWars);
+  const wars = warsQuery.data?.wars ?? [];
   const selectedWars = useMemo(() => {
     if (selectedWarIds === null) return wars.slice(0, 1);
     const ids = new Set(selectedWarIds);
@@ -441,13 +442,10 @@ export function AttackHistory() {
   const wins = selectedWars.filter((war) => warOutcome(war, ownFactionId) === "Victory").length;
   const losses = selectedWars.filter((war) => warOutcome(war, ownFactionId) === "Defeat").length;
   const draws = selectedWars.length - wins - losses;
+  const hasWarResults = selectedWars.every((war) => war.target > 0);
   const firstSelectedWar = selectedWars[0];
-  const firstOwnFaction = firstSelectedWar?.factions.find(
-    (faction) => faction.id === ownFactionId,
-  );
-  const firstOpponent = firstSelectedWar
-    ? warOpponent(firstSelectedWar, ownFactionId)
-    : undefined;
+  const firstOwnFaction = firstSelectedWar?.factions.find((faction) => faction.id === ownFactionId);
+  const firstOpponent = firstSelectedWar ? warOpponent(firstSelectedWar, ownFactionId) : undefined;
   const selectionStart = Math.min(...selectedWars.map((war) => war.start));
   const selectionEnd = Math.max(...selectedWars.map((war) => war.end));
   const isPending = warsQuery.isPending || Boolean(selectedWars.length && attackQuery.isPending);
@@ -455,15 +453,13 @@ export function AttackHistory() {
   const isError = warsQuery.isError || attackQuery.isError;
   const error = warsQuery.error ?? attackQuery.error;
   const refresh = () => {
-    void warsQuery.refetch();
+    void warsQuery.refetchFresh();
     if (selectedWars.length) void attackQuery.refetchFresh();
   };
   const toggleWar = (warId: number) => {
     const currentIds = selectedWarIds ?? selectedWars.map((war) => war.id);
     setSelectedWarIds(
-      currentIds.includes(warId)
-        ? currentIds.filter((id) => id !== warId)
-        : [...currentIds, warId],
+      currentIds.includes(warId) ? currentIds.filter((id) => id !== warId) : [...currentIds, warId],
     );
     setMemberSearch("");
   };
@@ -480,8 +476,8 @@ export function AttackHistory() {
             War history
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Combine one or more ranked wars. The analysis excludes chains, mugging, and every
-            attack outside the selected wars.
+            Combine one or more ranked wars. The analysis excludes chains, mugging, and every attack
+            outside the selected wars.
           </p>
         </div>
 
@@ -546,11 +542,13 @@ export function AttackHistory() {
                             {formatWarDate(war.start, timeZone)} · #{war.id}
                           </span>
                         </span>
-                        <span className="font-mono text-xs tabular-nums text-foreground">
-                          {war.factions.find((faction) => faction.id === factionQuery.data?.ID)
-                            ?.score ?? 0}
-                          :{rival?.score ?? 0}
-                        </span>
+                        {war.target > 0 && (
+                          <span className="font-mono text-xs tabular-nums text-foreground">
+                            {war.factions.find((faction) => faction.id === factionQuery.data?.ID)
+                              ?.score ?? 0}
+                            :{rival?.score ?? 0}
+                          </span>
+                        )}
                       </label>
                     );
                   })}
@@ -642,29 +640,40 @@ export function AttackHistory() {
                   </p>
                 </div>
                 <div className="border-l-2 border-primary/50 pl-4 font-mono">
-                  <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                    <Layers3 className="size-3.5" /> Combined record
-                  </div>
-                  <div className="flex items-end gap-4">
+                  {hasWarResults ? (
+                    <>
+                      <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                        <Layers3 className="size-3.5" /> Combined record
+                      </div>
+                      <div className="flex items-end gap-4">
+                        <div>
+                          <div className="text-2xl font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                            {wins}
+                          </div>
+                          <div className="text-[10px] uppercase text-muted-foreground">Wins</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-semibold tabular-nums text-destructive">
+                            {losses}
+                          </div>
+                          <div className="text-[10px] uppercase text-muted-foreground">Losses</div>
+                        </div>
+                        {draws > 0 && (
+                          <div>
+                            <div className="text-2xl font-semibold tabular-nums">{draws}</div>
+                            <div className="text-[10px] uppercase text-muted-foreground">Draws</div>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
                     <div>
-                      <div className="text-2xl font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
-                        {wins}
+                      <div className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                        <Layers3 className="size-3.5" /> Local cache
                       </div>
-                      <div className="text-[10px] uppercase text-muted-foreground">Wins</div>
+                      <div className="text-sm">Final scores were not cached</div>
                     </div>
-                    <div>
-                      <div className="text-2xl font-semibold tabular-nums text-destructive">
-                        {losses}
-                      </div>
-                      <div className="text-[10px] uppercase text-muted-foreground">Losses</div>
-                    </div>
-                    {draws > 0 && (
-                      <div>
-                        <div className="text-2xl font-semibold tabular-nums">{draws}</div>
-                        <div className="text-[10px] uppercase text-muted-foreground">Draws</div>
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
             </Card>

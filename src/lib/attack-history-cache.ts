@@ -11,6 +11,11 @@ type CachedWar = {
 	attacks: FactionAttack[];
 };
 
+export type CachedWarData = {
+	range: WarAttackRange;
+	attacks: FactionAttack[];
+};
+
 function openDatabase(): Promise<IDBDatabase> {
 	return new Promise((resolve, reject) => {
 		const request = indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
@@ -21,7 +26,6 @@ function openDatabase(): Promise<IDBDatabase> {
 		request.onerror = () => reject(request.error);
 	});
 }
-
 function requestResult<T>(request: IDBRequest<T>): Promise<T> {
 	return new Promise((resolve, reject) => {
 		request.onsuccess = () => resolve(request.result);
@@ -63,6 +67,37 @@ export async function readCachedWar(
 		}
 	} catch {
 		return null;
+	}
+}
+
+export async function readCachedWars(
+	scope: string | null,
+): Promise<CachedWarData[]> {
+	if (!scope || typeof indexedDB === "undefined") return [];
+	try {
+		const database = await openDatabase();
+		try {
+			const transaction = database.transaction(STORE_NAME, "readonly");
+			const records = await requestResult<CachedWar[]>(
+				transaction.objectStore(STORE_NAME).getAll(),
+			);
+			const prefix = `${scope}:`;
+			return records.flatMap((record) => {
+				if (!record.id.startsWith(prefix) || !Array.isArray(record.attacks)) {
+					return [];
+				}
+				const [id, from, to] = record.id
+					.slice(prefix.length)
+					.split(":")
+					.map(Number);
+				if (![id, from, to].every(Number.isSafeInteger)) return [];
+				return [{ range: { id, from, to }, attacks: record.attacks }];
+			});
+		} finally {
+			database.close();
+		}
+	} catch {
+		return [];
 	}
 }
 

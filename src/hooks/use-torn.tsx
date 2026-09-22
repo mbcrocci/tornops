@@ -3,6 +3,8 @@ import { useEffect, useMemo, useRef } from "react";
 import {
 	attackCacheScope,
 	readCachedWar,
+	readCachedWars,
+	type CachedWarData,
 	type WarAttackRange,
 	writeCachedWar,
 } from "@/lib/attack-history-cache";
@@ -66,7 +68,6 @@ const getUserData = async (key: string): Promise<User> => {
 
 	return data as User;
 };
-
 const getUserFaction = async (key: string) => {
 	const url = "https://api.torn.com/faction/";
 	const params = new URLSearchParams();
@@ -257,9 +258,56 @@ const getFactionAttackHistory = async (
 	};
 };
 
+export const rankedWarsFromCache = (
+	cachedWars: CachedWarData[],
+): FactionRankedWar[] => {
+	const wars = new Map<number, FactionRankedWar>();
+
+	for (const { range, attacks } of cachedWars) {
+		const factions = new Map<
+			number,
+			{ id: number; name: string; score: number; chain: number }
+		>();
+		for (const attack of attacks) {
+			for (const faction of [
+				attack.attacker?.faction,
+				attack.defender.faction,
+			]) {
+				if (faction && !factions.has(faction.id)) {
+					factions.set(faction.id, { ...faction, score: 0, chain: 0 });
+				}
+			}
+		}
+		wars.set(range.id, {
+			id: range.id,
+			start: range.from,
+			end: range.to - 1,
+			target: 0,
+			winner: null,
+			factions: [...factions.values()],
+		});
+	}
+
+	return [...wars.values()].sort((a, b) => b.end - a.end);
+};
+
+type RankedWarsResult = {
+	wars: FactionRankedWar[];
+	source: "cache" | "network";
+};
+
 const getFactionRankedWars = async (
 	key: string,
-): Promise<FactionRankedWar[]> => {
+	forceRefresh = false,
+): Promise<RankedWarsResult> => {
+	if (!forceRefresh) {
+		const cacheScope = await attackCacheScope(key);
+		const cachedWars = await readCachedWars(cacheScope);
+		if (cachedWars.length > 0) {
+			return { wars: rankedWarsFromCache(cachedWars), source: "cache" };
+		}
+	}
+
 	const url = new URL("https://api.torn.com/v2/faction/rankedwars");
 	url.searchParams.set("limit", "100");
 
@@ -282,7 +330,10 @@ const getFactionRankedWars = async (
 		throw new Error("Torn API returned incomplete ranked war data");
 	}
 
-	return (data.rankedwars as FactionRankedWar[]).sort((a, b) => b.end - a.end);
+	return {
+		wars: (data.rankedwars as FactionRankedWar[]).sort((a, b) => b.end - a.end),
+		source: "network",
+	};
 };
 
 const getFactionChainReport = async (
@@ -489,14 +540,27 @@ export const useFactionAttackHistory = (
 
 export const useFactionRankedWars = () => {
 	const key = useCredentialsStore((state) => state.publicKey ?? "");
+	const bypassCache = useRef(false);
 
-	return useQuery({
+	const query = useQuery({
 		queryKey: ["faction-ranked-wars", key],
-		queryFn: () => getFactionRankedWars(key),
+		queryFn: () => {
+			const forceRefresh = bypassCache.current;
+			bypassCache.current = false;
+			return getFactionRankedWars(key, forceRefresh);
+		},
 		enabled: Boolean(key),
 		staleTime: 5 * 60_000,
 		retry: false,
 	});
+
+	return {
+		...query,
+		refetchFresh: () => {
+			bypassCache.current = true;
+			return query.refetch();
+		},
+	};
 };
 
 export const useEnemyFactionChain = () => {
@@ -568,13 +632,14 @@ export const useEnemyMembers = (refetchIntervalOverride?: number) => {
 	}, [members, ffScouterData, setEnemyMembers]);
 };
 
-export const useUserFactionData = () => {
+export const useUserFactionData = (enabled = true) => {
 	const key = useCredentialsStore((state) => state.publicKey ?? "");
 	const refetchInterval = useGlobalStore((state) => state.refetchInterval);
 
 	return useQuery({
 		queryKey: ["user-faction-data", key],
 		queryFn: () => getUserFactionData(key),
+		enabled: Boolean(key && enabled),
 		refetchInterval: refetchInterval,
 	});
 };
