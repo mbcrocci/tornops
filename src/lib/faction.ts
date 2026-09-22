@@ -34,13 +34,7 @@ export type LastAction = {
 
 export type StatusEnum = "Idle" | "Offline" | "Online";
 
-export type Position =
-  | "Captain"
-  | "Co-leader"
-  | "Leader"
-  | "Lieutenant"
-  | "Member"
-  | "Sergeant";
+export type Position = "Captain" | "Co-leader" | "Leader" | "Lieutenant" | "Member" | "Sergeant";
 
 export type StatusClass = {
   description: string;
@@ -127,7 +121,22 @@ export type FactionAttack = {
 
 export type FactionAttackHistory = {
   attacks: FactionAttack[];
-  truncated: boolean;
+};
+
+export type FactionRankedWarParticipant = {
+  id: number;
+  name: string;
+  score: number;
+  chain: number;
+};
+
+export type FactionRankedWar = {
+  id: number;
+  start: number;
+  end: number;
+  target: number;
+  winner: number | null;
+  factions: FactionRankedWarParticipant[];
 };
 
 export type FactionChainReport = {

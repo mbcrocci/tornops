@@ -1,11 +1,18 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import {
+	attackCacheScope,
+	readCachedWar,
+	type WarAttackRange,
+	writeCachedWar,
+} from "@/lib/attack-history-cache";
 import type {
 	Faction,
 	FactionAttack,
 	FactionAttackHistory,
 	FactionChain,
 	FactionChainReport,
+	FactionRankedWar,
 } from "@/lib/faction";
 import {
 	type EnemyMember,
@@ -48,7 +55,8 @@ const getUserData = async (key: string): Promise<User> => {
 				typeof data.energy.current !== "number" ||
 				typeof data.energy.maximum !== "number"))
 	) {
-		const apiError = isRecord(data) && isRecord(data.error) ? data.error.error : null;
+		const apiError =
+			isRecord(data) && isRecord(data.error) ? data.error.error : null;
 		const message =
 			typeof apiError === "string"
 				? apiError
@@ -88,6 +96,19 @@ class TornApiError extends Error {
 }
 
 const keysWithoutFactionAttackAccess = new Set<string>();
+
+const waitFor = (milliseconds: number, signal?: AbortSignal) =>
+	new Promise<void>((resolve, reject) => {
+		const onAbort = () => {
+			window.clearTimeout(timeout);
+			reject(new DOMException("Request cancelled", "AbortError"));
+		};
+		const timeout = window.setTimeout(() => {
+			signal?.removeEventListener("abort", onAbort);
+			resolve();
+		}, milliseconds);
+		signal?.addEventListener("abort", onAbort, { once: true });
+	});
 
 const getChainAttacks = async (
 	key: string,
@@ -148,60 +169,125 @@ const getChainAttacks = async (
 
 const getFactionAttackHistory = async (
 	key: string,
-	from: number,
-	to: number,
+	ranges: WarAttackRange[],
+	signal?: AbortSignal,
+	forceRefresh = false,
 ): Promise<FactionAttackHistory> => {
 	const attacks = new Map<number, FactionAttack>();
-	let nextUrl: string | null = null;
-	let page = 0;
+	const cacheScope = await attackCacheScope(key);
+	let hasRequested = false;
 
-	do {
-		const url = new URL(nextUrl ?? "https://api.torn.com/v2/faction/attacks");
-		if (!nextUrl) {
-			url.searchParams.set("filters", "outgoing");
-			url.searchParams.set("from", from.toString());
-			url.searchParams.set("limit", "100");
-			url.searchParams.set("sort", "ASC");
-		}
-		// Torn's pagination links omit the original upper bound.
-		url.searchParams.set("to", to.toString());
-
-		const response = await fetch(url, {
-			headers: { Authorization: `ApiKey ${key}` },
-		});
-		const data: unknown = await response.json();
-
-		if (!response.ok) {
-			throw new Error(`Torn API request failed (${response.status})`);
-		}
-		if (isRecord(data) && isRecord(data.error)) {
-			const message = data.error.error;
-			throw new TornApiError(
-				typeof message === "string" ? message : "Torn API returned an error",
-				typeof data.error.code === "number" ? data.error.code : undefined,
-			);
-		}
-		if (!isRecord(data) || !Array.isArray(data.attacks)) {
-			throw new Error("Torn API returned incomplete attack data");
+	for (const range of ranges) {
+		if (signal?.aborted) throw new DOMException("Request cancelled", "AbortError");
+		const cached = forceRefresh ? null : await readCachedWar(cacheScope, range);
+		if (signal?.aborted) throw new DOMException("Request cancelled", "AbortError");
+		if (cached !== null) {
+			for (const attack of cached) attacks.set(attack.id, attack);
+			continue;
 		}
 
-		for (const attack of data.attacks as FactionAttack[]) {
-			attacks.set(attack.id, attack);
-		}
+		let nextUrl: string | null = null;
+		let rateLimitRetries = 0;
+		const completedUrls = new Set<string>();
+		const warAttacks = new Map<number, FactionAttack>();
 
-		const metadata = isRecord(data._metadata) ? data._metadata : null;
-		const links = metadata && isRecord(metadata.links) ? metadata.links : null;
-		nextUrl = links && typeof links.next === "string" ? links.next : null;
-		page += 1;
-	} while (nextUrl && page < 50);
+		do {
+			if (hasRequested) await waitFor(1_000, signal);
+			hasRequested = true;
+
+			const url = new URL(nextUrl ?? "https://api.torn.com/v2/faction/attacks");
+			if (!nextUrl) {
+				url.searchParams.set("filters", "outgoing");
+				url.searchParams.set("from", range.from.toString());
+				url.searchParams.set("limit", "100");
+				url.searchParams.set("sort", "ASC");
+			}
+			// Torn's pagination links omit the original upper bound.
+			url.searchParams.set("to", range.to.toString());
+			const requestUrl = url.toString();
+			if (completedUrls.has(requestUrl)) {
+				break;
+			}
+
+			const response = await fetch(url, {
+				headers: { Authorization: `ApiKey ${key}` },
+				signal,
+			});
+			const data: unknown = await response.json();
+			const apiError = isRecord(data) && isRecord(data.error) ? data.error : null;
+			const message = apiError?.error;
+			const code = typeof apiError?.code === "number" ? apiError.code : undefined;
+
+			if ((response.status === 429 || code === 5) && rateLimitRetries < 3) {
+				rateLimitRetries += 1;
+				await waitFor(65_000, signal);
+				continue;
+			}
+			if (!response.ok) {
+				throw new Error(`Torn API request failed (${response.status})`);
+			}
+			if (apiError) {
+				throw new TornApiError(
+					typeof message === "string" ? message : "Torn API returned an error",
+					code,
+				);
+			}
+			if (!isRecord(data) || !Array.isArray(data.attacks)) {
+				throw new Error("Torn API returned incomplete attack data");
+			}
+
+			rateLimitRetries = 0;
+			completedUrls.add(requestUrl);
+			for (const attack of data.attacks as FactionAttack[]) {
+				if (attack.is_ranked_war) warAttacks.set(attack.id, attack);
+			}
+
+			const metadata = isRecord(data._metadata) ? data._metadata : null;
+			const links = metadata && isRecord(metadata.links) ? metadata.links : null;
+			nextUrl = links && typeof links.next === "string" ? links.next : null;
+		} while (nextUrl);
+		if (signal?.aborted) throw new DOMException("Request cancelled", "AbortError");
+		const completedAttacks = [...warAttacks.values()];
+		for (const attack of completedAttacks) attacks.set(attack.id, attack);
+		await writeCachedWar(cacheScope, range, completedAttacks);
+	}
 
 	return {
 		attacks: [...attacks.values()].sort((a, b) => a.ended - b.ended),
-		truncated: Boolean(nextUrl),
 	};
 };
 
-const getFactionChainReport = async (key: string): Promise<FactionChainReport> => {
+const getFactionRankedWars = async (
+	key: string,
+): Promise<FactionRankedWar[]> => {
+	const url = new URL("https://api.torn.com/v2/faction/rankedwars");
+	url.searchParams.set("limit", "100");
+
+	const response = await fetch(url, {
+		headers: { Authorization: `ApiKey ${key}` },
+	});
+	const data: unknown = await response.json();
+
+	if (!response.ok) {
+		throw new Error(`Torn API request failed (${response.status})`);
+	}
+	if (isRecord(data) && isRecord(data.error)) {
+		const message = data.error.error;
+		throw new TornApiError(
+			typeof message === "string" ? message : "Torn API returned an error",
+			typeof data.error.code === "number" ? data.error.code : undefined,
+		);
+	}
+	if (!isRecord(data) || !Array.isArray(data.rankedwars)) {
+		throw new Error("Torn API returned incomplete ranked war data");
+	}
+
+	return (data.rankedwars as FactionRankedWar[]).sort((a, b) => b.end - a.end);
+};
+
+const getFactionChainReport = async (
+	key: string,
+): Promise<FactionChainReport> => {
 	const url = "https://api.torn.com/v2/faction/chainreport";
 	const params = new URLSearchParams();
 	params.set("key", key);
@@ -228,9 +314,10 @@ const getUserFactionData = async (key: string) => {
 	const url = "https://api.torn.com/faction/";
 	const params = new URLSearchParams();
 	params.set("selections", "basic");
-	params.set("key", key);
 
-	const response = await fetch(`${url}?${params.toString()}`);
+	const response = await fetch(`${url}?${params.toString()}`, {
+		headers: { Authorization: `ApiKey ${key}` },
+	});
 	return response.json() as Promise<Faction>;
 };
 
@@ -370,14 +457,44 @@ export const useFactionChainAttacks = (
 	});
 };
 
-export const useFactionAttackHistory = (from: number, to: number) => {
+export const useFactionAttackHistory = (
+	ranges: WarAttackRange[],
+) => {
+	const key = useCredentialsStore((state) => state.publicKey ?? "");
+	const bypassCache = useRef(false);
+	const rangeKey = ranges
+		.map((range) => `${range.id}:${range.from}:${range.to}`)
+		.join(",");
+
+	const query = useQuery({
+		queryKey: ["faction-attack-history", rangeKey, key],
+		queryFn: ({ signal }) => {
+			const forceRefresh = bypassCache.current;
+			bypassCache.current = false;
+			return getFactionAttackHistory(key, ranges, signal, forceRefresh);
+		},
+		enabled: Boolean(key && ranges.length),
+		staleTime: 60_000,
+		retry: false,
+	});
+
+	return {
+		...query,
+		refetchFresh: () => {
+			bypassCache.current = true;
+			return query.refetch();
+		},
+	};
+};
+
+export const useFactionRankedWars = () => {
 	const key = useCredentialsStore((state) => state.publicKey ?? "");
 
 	return useQuery({
-		queryKey: ["faction-attack-history", from, to, key],
-		queryFn: () => getFactionAttackHistory(key, from, to),
-		enabled: Boolean(key && from && to && from < to),
-		staleTime: 60_000,
+		queryKey: ["faction-ranked-wars", key],
+		queryFn: () => getFactionRankedWars(key),
+		enabled: Boolean(key),
+		staleTime: 5 * 60_000,
 		retry: false,
 	});
 };

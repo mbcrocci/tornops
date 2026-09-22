@@ -2,7 +2,9 @@ import {
   Activity,
   AlertCircle,
   CalendarDays,
+  ChevronDown,
   Clock3,
+  Layers3,
   RefreshCw,
   Search,
   ShieldAlert,
@@ -13,12 +15,18 @@ import {
   Zap,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useFactionAttackHistory } from "@/hooks/use-torn";
-import type { FactionAttack } from "@/lib/faction";
+import {
+  useFactionAttackHistory,
+  useFactionRankedWars,
+  useUserFactionData,
+} from "@/hooks/use-torn";
+import type { FactionAttack, FactionRankedWar } from "@/lib/faction";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Checkbox } from "./ui/checkbox";
 import { Input } from "./ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 
 const TIME_ZONES = [
   { value: "local", label: "My timezone" },
@@ -84,53 +92,6 @@ function hourAt(timestamp: number, timeZone: string) {
       hourCycle: "h23",
     }).format(new Date(timestamp * 1000)),
   );
-}
-
-function zonedDateToTimestamp(value: string, timeZone: string) {
-  const [year, month, day] = value.split("-").map(Number);
-  if (timeZone === "local") {
-    return Math.floor(new Date(year, month - 1, day).getTime() / 1000);
-  }
-
-  const target = Date.UTC(year, month - 1, day);
-  let guess = target;
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-    second: "numeric",
-    hourCycle: "h23",
-  });
-
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    const parts = Object.fromEntries(
-      formatter.formatToParts(new Date(guess)).map((part) => [part.type, part.value]),
-    );
-    const rendered = Date.UTC(
-      Number(parts.year),
-      Number(parts.month) - 1,
-      Number(parts.day),
-      Number(parts.hour),
-      Number(parts.minute),
-      Number(parts.second),
-    );
-    guess += target - rendered;
-  }
-
-  return Math.floor(guess / 1000);
-}
-
-function addDays(value: string, days: number) {
-  const [year, month, day] = value.split("-").map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day + days));
-  return date.toISOString().slice(0, 10);
-}
-
-function todayInputValue() {
-  return new Date().toISOString().slice(0, 10);
 }
 
 export function analyzeAttacks(attacks: FactionAttack[], timeZone: string) {
@@ -319,6 +280,24 @@ function formatDateTime(timestamp: number, timeZone: string) {
   }).format(new Date(timestamp * 1000));
 }
 
+function warOpponent(war: FactionRankedWar, factionId: number | undefined) {
+  return war.factions.find((faction) => faction.id !== factionId) ?? war.factions[1];
+}
+
+function formatWarDate(timestamp: number, timeZone: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: timeZone === "local" ? undefined : timeZone,
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(timestamp * 1000));
+}
+
+function warOutcome(war: FactionRankedWar, factionId: number | undefined) {
+  if (!war.winner) return "Draw";
+  return war.winner === factionId ? "Victory" : "Defeat";
+}
+
 function Metric({
   label,
   value,
@@ -398,7 +377,9 @@ function DayHeatmap({ days }: { days: Map<string, number[]> }) {
                   key={hour}
                   title={`${day} ${formatHour(hour)}: ${count} attacks`}
                   className="aspect-square min-h-3 bg-primary"
-                  style={{ opacity: count === 0 ? 0.06 : 0.2 + (count / max) * 0.8 }}
+                  style={{
+                    opacity: count === 0 ? 0.06 : 0.2 + (count / max) * 0.8,
+                  }}
                 />
               ))}
             </div>
@@ -411,20 +392,30 @@ function DayHeatmap({ days }: { days: Map<string, number[]> }) {
 
 export function AttackHistory() {
   const [timeZone, setTimeZone] = useState("local");
-  const [fromDate, setFromDate] = useState(() => addDays(todayInputValue(), -29));
-  const [toDate, setToDate] = useState(todayInputValue);
-  const [activityFilter, setActivityFilter] = useState<"ranked" | "all">("ranked");
+  const [selectedWarIds, setSelectedWarIds] = useState<number[] | null>(null);
   const [memberSearch, setMemberSearch] = useState("");
-  const from = useMemo(() => zonedDateToTimestamp(fromDate, timeZone), [fromDate, timeZone]);
-  const to = useMemo(() => zonedDateToTimestamp(addDays(toDate, 1), timeZone), [toDate, timeZone]);
-  const { data, isPending, isFetching, isError, error, refetch } = useFactionAttackHistory(
-    from,
-    to,
+  const factionQuery = useUserFactionData();
+  const warsQuery = useFactionRankedWars();
+  const wars = warsQuery.data ?? [];
+  const selectedWars = useMemo(() => {
+    if (selectedWarIds === null) return wars.slice(0, 1);
+    const ids = new Set(selectedWarIds);
+    return wars.filter((war) => ids.has(war.id));
+  }, [selectedWarIds, wars]);
+  const attackRanges = useMemo(
+    () =>
+      selectedWars.map((war) => ({
+        id: war.id,
+        from: war.start,
+        to: war.end + 1,
+      })),
+    [selectedWars],
   );
-  const attacks = data?.attacks ?? [];
+  const attackQuery = useFactionAttackHistory(attackRanges);
+  const attacks = attackQuery.data?.attacks ?? [];
   const selectedAttacks = useMemo(
-    () => attacks.filter((attack) => activityFilter === "all" || attack.is_ranked_war),
-    [activityFilter, attacks],
+    () => attacks.filter((attack) => attack.is_ranked_war),
+    [attacks],
   );
   const analysis = useMemo(
     () => analyzeAttacks(selectedAttacks, timeZone),
@@ -443,6 +434,39 @@ export function AttackHistory() {
   const filteredMembers = analysis.members.filter((member) =>
     member.name.toLowerCase().includes(memberSearch.trim().toLowerCase()),
   );
+  const ownFactionId =
+    factionQuery.data?.ID ??
+    selectedAttacks.find((attack) => attack.attacker?.faction)?.attacker?.faction?.id;
+  const selectedWarIdsSet = new Set(selectedWars.map((war) => war.id));
+  const wins = selectedWars.filter((war) => warOutcome(war, ownFactionId) === "Victory").length;
+  const losses = selectedWars.filter((war) => warOutcome(war, ownFactionId) === "Defeat").length;
+  const draws = selectedWars.length - wins - losses;
+  const firstSelectedWar = selectedWars[0];
+  const firstOwnFaction = firstSelectedWar?.factions.find(
+    (faction) => faction.id === ownFactionId,
+  );
+  const firstOpponent = firstSelectedWar
+    ? warOpponent(firstSelectedWar, ownFactionId)
+    : undefined;
+  const selectionStart = Math.min(...selectedWars.map((war) => war.start));
+  const selectionEnd = Math.max(...selectedWars.map((war) => war.end));
+  const isPending = warsQuery.isPending || Boolean(selectedWars.length && attackQuery.isPending);
+  const isFetching = warsQuery.isFetching || attackQuery.isFetching;
+  const isError = warsQuery.isError || attackQuery.isError;
+  const error = warsQuery.error ?? attackQuery.error;
+  const refresh = () => {
+    void warsQuery.refetch();
+    if (selectedWars.length) void attackQuery.refetchFresh();
+  };
+  const toggleWar = (warId: number) => {
+    const currentIds = selectedWarIds ?? selectedWars.map((war) => war.id);
+    setSelectedWarIds(
+      currentIds.includes(warId)
+        ? currentIds.filter((id) => id !== warId)
+        : [...currentIds, warId],
+    );
+    setMemberSearch("");
+  };
 
   return (
     <main className="mx-auto w-full max-w-[1500px] px-3 pb-12 pt-5 sm:px-6">
@@ -453,33 +477,87 @@ export function AttackHistory() {
             Faction intelligence
           </div>
           <h1 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">
-            Attack history
+            War history
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Pick the hours for a coordinated push, find the thin shifts, and check who has shown up
-            consistently.
+            Combine one or more ranked wars. The analysis excludes chains, mugging, and every
+            attack outside the selected wars.
           </p>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-[auto_auto_auto_auto] sm:items-end">
-          <label className="grid gap-1 text-xs text-muted-foreground">
-            From
-            <Input
-              type="date"
-              value={fromDate}
-              max={toDate}
-              onChange={(event) => setFromDate(event.target.value)}
-            />
-          </label>
-          <label className="grid gap-1 text-xs text-muted-foreground">
-            To
-            <Input
-              type="date"
-              value={toDate}
-              min={fromDate}
-              onChange={(event) => setToDate(event.target.value)}
-            />
-          </label>
+        <div className="grid gap-2 sm:grid-cols-[minmax(290px,1fr)_auto_auto] sm:items-end">
+          <div className="grid gap-1 text-xs text-muted-foreground">
+            <span>Past ranked wars</span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full min-w-0 justify-between px-3 font-normal text-foreground"
+                  disabled={wars.length === 0}
+                >
+                  <span className="truncate">
+                    {selectedWars.length === 0
+                      ? "Choose wars"
+                      : selectedWars.length === 1
+                        ? `${warOpponent(selectedWars[0], factionQuery.data?.ID)?.name ?? `War ${selectedWars[0].id}`} · ${formatWarDate(selectedWars[0].end, timeZone)}`
+                        : `${selectedWars.length} wars selected`}
+                  </span>
+                  <ChevronDown className="size-4 text-muted-foreground" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-[min(92vw,28rem)] p-0">
+                <div className="flex items-center justify-between border-b px-3 py-2">
+                  <span className="text-xs text-muted-foreground">
+                    {selectedWars.length} of {wars.length} selected
+                  </span>
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setSelectedWarIds(wars.map((war) => war.id))}
+                    >
+                      Select all
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setSelectedWarIds([])}>
+                      Clear
+                    </Button>
+                  </div>
+                </div>
+                <div className="max-h-80 overflow-y-auto p-1">
+                  {wars.map((war) => {
+                    const rival = warOpponent(war, factionQuery.data?.ID);
+                    const checkboxId = `war-${war.id}`;
+                    return (
+                      <label
+                        key={war.id}
+                        htmlFor={checkboxId}
+                        className="flex cursor-pointer items-center gap-3 rounded-sm px-2 py-2.5 hover:bg-muted"
+                      >
+                        <Checkbox
+                          id={checkboxId}
+                          checked={selectedWarIdsSet.has(war.id)}
+                          onCheckedChange={() => toggleWar(war.id)}
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-medium text-foreground">
+                            {rival?.name ?? `War ${war.id}`}
+                          </span>
+                          <span className="block font-mono text-[10px] text-muted-foreground">
+                            {formatWarDate(war.start, timeZone)} · #{war.id}
+                          </span>
+                        </span>
+                        <span className="font-mono text-xs tabular-nums text-foreground">
+                          {war.factions.find((faction) => faction.id === factionQuery.data?.ID)
+                            ?.score ?? 0}
+                          :{rival?.score ?? 0}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
           <label className="grid gap-1 text-xs text-muted-foreground">
             Display timezone
             <select
@@ -494,7 +572,7 @@ export function AttackHistory() {
               ))}
             </select>
           </label>
-          <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
+          <Button variant="outline" onClick={refresh} disabled={isFetching}>
             <RefreshCw className={cn(isFetching && "animate-spin")} />
             Refresh
           </Button>
@@ -506,7 +584,7 @@ export function AttackHistory() {
           <CardContent className="flex gap-3 py-4">
             <ShieldAlert className="mt-0.5 size-5 shrink-0 text-destructive" />
             <div>
-              <p className="font-medium">Attack history is unavailable</p>
+              <p className="font-medium">War history is unavailable</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 {error instanceof Error ? error.message : "The Torn API request failed."} The key
                 needs Limited Access and the faction API Access permission.
@@ -516,64 +594,102 @@ export function AttackHistory() {
         </Card>
       ) : isPending ? (
         <div className="grid min-h-72 place-items-center text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <RefreshCw className="size-4 animate-spin" /> Loading attack history…
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-2">
+              <RefreshCw className="size-4 animate-spin" />
+              {warsQuery.isPending
+                ? "Loading ranked wars…"
+                : `Loading every attack from ${selectedWars.length} ${selectedWars.length === 1 ? "war" : "wars"}…`}
+            </div>
+            {!warsQuery.isPending && (
+              <p className="mt-2 text-xs">
+                If Torn applies its request limit, loading pauses for 65 seconds before retrying.
+              </p>
+            )}
           </div>
         </div>
-      ) : attacks.length === 0 ? (
+      ) : wars.length === 0 ? (
         <Card>
           <CardContent className="flex gap-3 py-5">
             <AlertCircle className="mt-0.5 size-5 text-muted-foreground" />
             <div>
-              <p className="font-medium">No outgoing attacks in this period</p>
-              <p className="mt-1 text-sm text-muted-foreground">Choose a wider date range.</p>
+              <p className="font-medium">No completed ranked wars found</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Torn did not return any past wars for this faction.
+              </p>
             </div>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
-          {data?.truncated && (
-            <div className="border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-200">
-              This range contains more than 5,000 attacks. The charts use the first 5,000. Choose a
-              shorter range for a complete view.
-            </div>
-          )}
-
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4">
-            <div
-              className="inline-flex rounded-md border bg-muted/30 p-1"
-              aria-label="Attack sample"
-            >
-              <Button
-                size="sm"
-                variant={activityFilter === "ranked" ? "default" : "ghost"}
-                onClick={() => setActivityFilter("ranked")}
-              >
-                Ranked wars
-              </Button>
-              <Button
-                size="sm"
-                variant={activityFilter === "all" ? "default" : "ghost"}
-                onClick={() => setActivityFilter("all")}
-              >
-                All attacks
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {selectedAttacks.length.toLocaleString()} records across {analysis.days.size} days
-              with activity
-            </p>
-          </div>
-
-          {selectedAttacks.length === 0 ? (
+          {selectedWars.length > 0 ? (
+            <Card className="overflow-hidden border-primary/30 p-0">
+              <div className="grid gap-4 bg-primary/[0.055] p-5 sm:grid-cols-[1fr_auto] sm:items-center sm:p-6">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                    {selectedWars.length} ranked {selectedWars.length === 1 ? "war" : "wars"} ·{" "}
+                    {formatWarDate(selectionStart, timeZone)} to{" "}
+                    {formatWarDate(selectionEnd, timeZone)}
+                  </p>
+                  <h2 className="mt-2 font-serif text-2xl font-semibold sm:text-3xl">
+                    {selectedWars.length === 1
+                      ? `${firstOwnFaction?.name ?? "Your faction"} vs ${firstOpponent?.name ?? "Opponent"}`
+                      : `${selectedWars.length} wars combined`}
+                  </h2>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {selectedAttacks.length.toLocaleString()} ranked-war attacks across{" "}
+                    {analysis.days.size} active days
+                  </p>
+                </div>
+                <div className="border-l-2 border-primary/50 pl-4 font-mono">
+                  <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                    <Layers3 className="size-3.5" /> Combined record
+                  </div>
+                  <div className="flex items-end gap-4">
+                    <div>
+                      <div className="text-2xl font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                        {wins}
+                      </div>
+                      <div className="text-[10px] uppercase text-muted-foreground">Wins</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-semibold tabular-nums text-destructive">
+                        {losses}
+                      </div>
+                      <div className="text-[10px] uppercase text-muted-foreground">Losses</div>
+                    </div>
+                    {draws > 0 && (
+                      <div>
+                        <div className="text-2xl font-semibold tabular-nums">{draws}</div>
+                        <div className="text-[10px] uppercase text-muted-foreground">Draws</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ) : (
             <Card>
               <CardContent className="flex gap-3 py-5">
                 <AlertCircle className="mt-0.5 size-5 text-muted-foreground" />
                 <div>
-                  <p className="font-medium">No ranked-war attacks in this range</p>
+                  <p className="font-medium">Choose at least one war</p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Widen the dates or switch to all attacks to estimate a schedule from general
-                    activity.
+                    Open the war selector and pick the wars to compare.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {selectedWars.length === 0 ? null : selectedAttacks.length === 0 ? (
+            <Card>
+              <CardContent className="flex gap-3 py-5">
+                <AlertCircle className="mt-0.5 size-5 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">No ranked-war attacks found</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Torn returned the war, but no outgoing attacks marked as ranked-war hits.
                   </p>
                 </div>
               </CardContent>
@@ -668,9 +784,8 @@ export function AttackHistory() {
                   </section>
                 </div>
                 <div className="border-t bg-muted/25 px-5 py-3 text-xs text-muted-foreground">
-                  These recommendations compare unique attackers on days with{" "}
-                  {activityFilter === "ranked" ? "ranked-war" : "faction"} activity. An attack
-                  proves presence. Silence does not prove absence.
+                  These recommendations compare unique attackers during this war. An attack proves
+                  presence. Silence does not prove absence.
                 </div>
               </Card>
 
@@ -736,7 +851,7 @@ export function AttackHistory() {
                       Unique faction members who attacked during each hour
                     </p>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-2 gap-x-5 gap-y-2">
+                  <CardContent className="grid gap-y-2">
                     {analysis.hours.map((bucket, hour) => (
                       <div
                         key={hour}
@@ -794,7 +909,6 @@ export function AttackHistory() {
                         <th className="px-3 py-2 font-medium">Seen</th>
                         <th className="px-3 py-2 font-medium">Observed rate</th>
                         <th className="px-3 py-2 font-medium">Hits</th>
-                        <th className="px-3 py-2 font-medium">RW hits</th>
                         <th className="px-4 py-2 text-right font-medium">Respect</th>
                       </tr>
                     </thead>
@@ -832,7 +946,9 @@ export function AttackHistory() {
                                         ? "bg-amber-500"
                                         : "bg-muted-foreground/50",
                                   )}
-                                  style={{ width: `${member.reliableWindow.reliability * 100}%` }}
+                                  style={{
+                                    width: `${member.reliableWindow.reliability * 100}%`,
+                                  }}
                                 />
                               </div>
                               <span className="font-mono text-xs tabular-nums">
@@ -845,9 +961,6 @@ export function AttackHistory() {
                             <span className="ml-1 text-[10px] text-muted-foreground">
                               / {member.attacks}
                             </span>
-                          </td>
-                          <td className="px-3 py-2.5 font-mono tabular-nums">
-                            {member.rankedWarHits}
                           </td>
                           <td className="px-4 py-2.5 text-right font-mono tabular-nums">
                             {member.respect.toFixed(2)}
@@ -866,7 +979,7 @@ export function AttackHistory() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Recent attacks</CardTitle>
+                  <CardTitle>War attacks</CardTitle>
                 </CardHeader>
                 <CardContent className="overflow-x-auto px-0">
                   <table className="w-full min-w-[720px] text-sm">
@@ -876,7 +989,6 @@ export function AttackHistory() {
                         <th className="px-3 py-2 font-medium">Attacker</th>
                         <th className="px-3 py-2 font-medium">Defender</th>
                         <th className="px-3 py-2 font-medium">Result</th>
-                        <th className="px-3 py-2 font-medium">Context</th>
                         <th className="px-4 py-2 text-right font-medium">Respect</th>
                       </tr>
                     </thead>
@@ -892,13 +1004,6 @@ export function AttackHistory() {
                             <td className="px-3 py-2.5">{attack.attacker?.name ?? "Stealthed"}</td>
                             <td className="px-3 py-2.5">{attack.defender.name}</td>
                             <td className="px-3 py-2.5">{attack.result}</td>
-                            <td className="px-3 py-2.5 text-xs text-muted-foreground">
-                              {attack.is_ranked_war
-                                ? "Ranked war"
-                                : attack.chain
-                                  ? `Chain ${attack.chain}`
-                                  : "Outside chain"}
-                            </td>
                             <td className="px-4 py-2.5 text-right font-mono tabular-nums">
                               {attack.respect_gain.toFixed(2)}
                             </td>
