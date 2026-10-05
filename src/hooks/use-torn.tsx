@@ -23,6 +23,7 @@ import {
 } from "@/lib/stores";
 import type { User } from "@/lib/user";
 import { useFFScouterData } from "./use-ffscouter";
+import { useObserveTravel } from "./use-travel-estimates";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
 	typeof value === "object" && value !== null;
@@ -598,6 +599,8 @@ export const useEnemyMembers = (refetchIntervalOverride?: number) => {
 		}));
 	}, [enemyFactionData?.members]);
 
+	useObserveTravel(members, dataUpdatedAt);
+
 	// Get FF scouter data for all members
 	const memberIds = useMemo(
 		() => members.map((member) => member.id),
@@ -664,6 +667,8 @@ export const useUserMembers = () => {
 			id: parseInt(id, 10),
 		}));
 	}, [userFactionData?.members]);
+
+	useObserveTravel(members, dataUpdatedAt);
 
 	// Get FF scouter data for all members
 	const memberIds = useMemo(

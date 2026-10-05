@@ -6,6 +6,7 @@ import { playerAttackLink, playerProfileLink } from "@/lib/links";
 import { cleanStatusDescription, getStatusBgColorClass } from "@/lib/status";
 import { DataTableColumnHeader } from "../data-table-column-header";
 import { HospitalCountdown } from "../hospital-countdown";
+import { TravelCountdown } from "../travel-countdown";
 import { Button, buttonVariants } from "../ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
@@ -164,6 +165,7 @@ export const columns: ColumnDef<EnemyFactionMember>[] = [
                 member.status.state}
             </span>
           )}
+          <TravelCountdown id={member.id} status={member.status} />
         </div>
       );
     },
