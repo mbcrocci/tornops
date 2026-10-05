@@ -28,6 +28,16 @@ void (async () => {
 
   let recordsToImport;
   if (!isLocal) {
+    const credentials = JSON.parse(localStorage.getItem("tornops-credentials") ?? "null");
+    const apiKey = credentials?.state?.publicKey;
+    if (typeof apiKey !== "string" || !apiKey) {
+      throw new Error("Save a Torn API key in TornOps before importing war history.");
+    }
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(apiKey));
+    const scope = Array.from(new Uint8Array(digest), (byte) =>
+      byte.toString(16).padStart(2, "0"),
+    ).join("");
+
     const file = await new Promise((resolve) => {
       const input = document.createElement("input");
       input.type = "file";
@@ -40,11 +50,18 @@ void (async () => {
     if (
       !Array.isArray(recordsToImport) ||
       !recordsToImport.every(
-        (record) => typeof record?.id === "string" && Array.isArray(record?.attacks),
+        (record) =>
+          typeof record?.id === "string" &&
+          /^[0-9a-f]{64}:\d+:\d+:\d+$/.test(record.id) &&
+          Array.isArray(record?.attacks),
       )
     ) {
       throw new Error("That file is not a TornOps attack-history export.");
     }
+    recordsToImport = recordsToImport.map((record) => ({
+      ...record,
+      id: `${scope}:${record.id.slice(65)}`,
+    }));
   }
 
   const database = await openDatabase();
