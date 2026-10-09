@@ -1,40 +1,25 @@
-import { Check, Eye, EyeOff, Loader2, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Check, Eye, EyeOff, Info, Loader2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useCredentialsStore } from "@/lib/stores";
 import { Button } from "./ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupInput,
-} from "./ui/input-group";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "./ui/input-group";
 import { Label } from "./ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
-export function CredentialsCard({
-  showErrors = false,
-}: {
-  showErrors?: boolean;
-}) {
+export function CredentialsCard({ showErrors = false }: { showErrors?: boolean }) {
   const { isTornKeyValid, isFFScouterKeyValid } = useCredentialsStore();
 
-  const hasErrors =
-    showErrors && (isTornKeyValid === false || isFFScouterKeyValid === false);
+  const hasErrors = showErrors && (isTornKeyValid === false || isFFScouterKeyValid === false);
 
   return (
     <Card className="w-full max-w-lg">
       <CardHeader>
-        <CardTitle>Credentials</CardTitle>
+        <CardTitle>Login</CardTitle>
         <CardDescription>
           {hasErrors
             ? "Your stored credentials are invalid. Please update them."
-            : "Enter your API key to get started"}
+            : "Enter your Torn API key, then validate to log in. FFScouter is optional."}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -47,9 +32,7 @@ export function CredentialsCard({
               {isTornKeyValid === false && (
                 <li>Torn Limited Access API Key is invalid or expired</li>
               )}
-              {isFFScouterKeyValid === false && (
-                <li>FFScouter API Key is invalid or expired</li>
-              )}
+              {isFFScouterKeyValid === false && <li>FFScouter API Key is invalid or expired</li>}
             </ul>
           </div>
         )}
@@ -71,7 +54,14 @@ export const validateTornKey = async (key: string): Promise<boolean> => {
     const data = await response.json();
 
     // Torn API returns error object if key is invalid or doesn't have access
-    return !data.error;
+    return (
+      response.ok &&
+      !!data &&
+      typeof data === "object" &&
+      !Array.isArray(data) &&
+      !data.error &&
+      !!data.chain
+    );
   } catch {
     return false;
   }
@@ -88,7 +78,7 @@ export const validateFFScouterKey = async (key: string): Promise<boolean> => {
     const data = await response.json();
 
     // FFScouter returns error if key is invalid
-    return !data.error;
+    return response.ok && Array.isArray(data);
   } catch {
     return false;
   }
@@ -106,16 +96,11 @@ export function CredentialsInput() {
     setFFScouterKeyValidation,
   } = useCredentialsStore();
 
-  const [publicKeyInput, setPublicKeyInput] = useState<string | undefined>(
-    publicKey
-  );
-  const [ffscouterKeyInput, setFFScouterKeyInput] = useState<
-    string | undefined
-  >(ffscouterKey);
+  const [publicKeyInput, setPublicKeyInput] = useState<string | undefined>(publicKey);
+  const [ffscouterKeyInput, setFFScouterKeyInput] = useState<string | undefined>(ffscouterKey);
 
   const [tornValidation, setTornValidation] = useState<ValidationState>("idle");
-  const [ffscouterValidation, setFFScouterValidation] =
-    useState<ValidationState>("idle");
+  const [ffscouterValidation, setFFScouterValidation] = useState<ValidationState>("idle");
 
   const [showTornKey, setShowTornKey] = useState(false);
   const [showFFScouterKey, setShowFFScouterKey] = useState(false);
@@ -146,20 +131,36 @@ export function CredentialsInput() {
     setFFScouterKeyValidation,
   ]);
 
-  const handleValidateTorn = async () => {
-    if (!publicKeyInput) return;
+  const [isValidating, setIsValidating] = useState(false);
+  const validationInFlight = useRef(false);
 
+  const handleValidate = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!publicKeyInput?.trim() || validationInFlight.current) return;
+
+    const tornKey = publicKeyInput.trim();
+    const scouterKey = ffscouterKeyInput?.trim();
+    validationInFlight.current = true;
+    setIsValidating(true);
     setTornValidation("validating");
-    const isValid = await validateTornKey(publicKeyInput);
-    setTornValidation(isValid ? "valid" : "invalid");
-  };
+    setFFScouterValidation(scouterKey ? "validating" : "idle");
 
-  const handleValidateFFScouter = async () => {
-    if (!ffscouterKeyInput) return;
+    try {
+      const [tornValid, scouterValid] = await Promise.all([
+        validateTornKey(tornKey),
+        scouterKey ? validateFFScouterKey(scouterKey) : Promise.resolve(true),
+      ]);
+      setTornValidation(tornValid ? "valid" : "invalid");
+      setFFScouterValidation(scouterKey ? (scouterValid ? "valid" : "invalid") : "idle");
 
-    setFFScouterValidation("validating");
-    const isValid = await validateFFScouterKey(ffscouterKeyInput);
-    setFFScouterValidation(isValid ? "valid" : "invalid");
+      if (tornValid && scouterValid) {
+        setFFScouterKey(scouterKey, true);
+        setPublicKey(tornKey, true);
+      }
+    } finally {
+      validationInFlight.current = false;
+      setIsValidating(false);
+    }
   };
 
   const getValidationIcon = (state: ValidationState) => {
@@ -167,9 +168,7 @@ export function CredentialsInput() {
       case "validating":
         return <Loader2 className="size-3.5 animate-spin" />;
       case "valid":
-        return (
-          <Check className="size-3.5 text-green-600 dark:text-green-400" />
-        );
+        return <Check className="size-3.5 text-green-600 dark:text-green-400" />;
       case "invalid":
         return <X className="size-3.5 text-red-600 dark:text-red-400" />;
       default:
@@ -177,51 +176,39 @@ export function CredentialsInput() {
     }
   };
 
-  const formatDisplayValue = (
-    value: string | undefined,
-    isVisible: boolean
-  ): string => {
-    if (!value) return "";
-    if (isVisible) return value;
-    if (value.length <= 3) return value;
-    const firstThree = value.slice(0, 3);
-    const masked = "•".repeat(value.length - 3);
-    return firstThree + masked;
-  };
-
   const handleTornKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    // Remove mask characters and use the actual typed value
-    const cleanValue = newValue.replace(/•/g, "");
-    setPublicKeyInput(cleanValue);
+    setPublicKeyInput(newValue);
     setTornValidation("idle");
   };
 
   const handleFFScouterKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    // Remove mask characters and use the actual typed value
-    const cleanValue = newValue.replace(/•/g, "");
-    setFFScouterKeyInput(cleanValue);
+    setFFScouterKeyInput(newValue);
     setFFScouterValidation("idle");
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    <form onSubmit={handleValidate} className="flex flex-col gap-4" aria-busy={isValidating}>
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="torn-key">Torn Limited Access API Key</Label>
+        <div className="flex items-center gap-1.5">
+          <Label htmlFor="torn-key">Torn Limited Access API Key</Label>
+          <KeyHelp label="About the Torn API key">
+            Reads your player status, faction members, chains, and attack history. Use a Torn key
+            with Limited Access for more features.
+          </KeyHelp>
+        </div>
         <InputGroup
           aria-invalid={tornValidation === "invalid"}
-          className={
-            tornValidation === "valid"
-              ? "border-green-600 dark:border-green-400"
-              : ""
-          }
+          className={tornValidation === "valid" ? "border-green-600 dark:border-green-400" : ""}
         >
           <InputGroupInput
             id="torn-key"
-            type="text"
+            aria-invalid={tornValidation === "invalid"}
+            type={showTornKey ? "text" : "password"}
             placeholder="Your Torn Limited Access API Key"
-            value={formatDisplayValue(publicKeyInput, showTornKey)}
+            value={publicKeyInput ?? ""}
+            disabled={isValidating}
             onChange={handleTornKeyChange}
           />
           <InputGroupAddon align="inline-end">
@@ -231,39 +218,34 @@ export function CredentialsInput() {
               type="button"
               aria-label={showTornKey ? "Hide key" : "Show key"}
             >
-              {showTornKey ? (
-                <EyeOff className="size-3.5" />
-              ) : (
-                <Eye className="size-3.5" />
-              )}
-            </InputGroupButton>
-            <InputGroupButton
-              onClick={handleValidateTorn}
-              disabled={!publicKeyInput || tornValidation === "validating"}
-            >
-              Validate
+              {showTornKey ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
             </InputGroupButton>
           </InputGroupAddon>
         </InputGroup>
       </div>
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="ffscouter-key">
-          FFScouter API Key{" "}
-          <span className="text-muted-foreground font-normal">(optional)</span>
-        </Label>
+        <div className="flex items-center gap-1.5">
+          <Label htmlFor="ffscouter-key">
+            FFScouter API Key <span className="text-muted-foreground font-normal">(optional)</span>
+          </Label>
+          <KeyHelp label="About the FFScouter API key">
+            Adds estimated battle stats, fair fight scores, and player and faction activity history
+            from FFScouter. Leave it blank to use TornOps without these features.
+          </KeyHelp>
+        </div>
         <InputGroup
           aria-invalid={ffscouterValidation === "invalid"}
           className={
-            ffscouterValidation === "valid"
-              ? "border-green-600 dark:border-green-400"
-              : ""
+            ffscouterValidation === "valid" ? "border-green-600 dark:border-green-400" : ""
           }
         >
           <InputGroupInput
             id="ffscouter-key"
-            type="text"
+            aria-invalid={ffscouterValidation === "invalid"}
+            type={showFFScouterKey ? "text" : "password"}
             placeholder="Your FFScouter API Key"
-            value={formatDisplayValue(ffscouterKeyInput, showFFScouterKey)}
+            value={ffscouterKeyInput ?? ""}
+            disabled={isValidating}
             onChange={handleFFScouterKeyChange}
           />
           <InputGroupAddon align="inline-end">
@@ -273,62 +255,45 @@ export function CredentialsInput() {
               type="button"
               aria-label={showFFScouterKey ? "Hide key" : "Show key"}
             >
-              {showFFScouterKey ? (
-                <EyeOff className="size-3.5" />
-              ) : (
-                <Eye className="size-3.5" />
-              )}
-            </InputGroupButton>
-            <InputGroupButton
-              onClick={handleValidateFFScouter}
-              disabled={
-                !ffscouterKeyInput || ffscouterValidation === "validating"
-              }
-            >
-              Validate
+              {showFFScouterKey ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
             </InputGroupButton>
           </InputGroupAddon>
         </InputGroup>
       </div>
       {tornValidation === "invalid" && (
-        <p className="text-sm text-red-600 dark:text-red-400">
-          Torn Limited Access API Key is invalid. Please validate it before
-          setting credentials.
+        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+          Could not validate your Torn key. Check the key and its faction API Access permission,
+          then try again.
         </p>
       )}
       {ffscouterKeyInput && ffscouterValidation === "invalid" && (
-        <p className="text-sm text-red-600 dark:text-red-400">
-          FFScouter API Key is invalid. Please validate it before setting
-          credentials.
+        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+          Could not validate your FFScouter key. Check the key and try again, or leave it blank.
         </p>
       )}
-      <Button
-        onClick={() => {
-          // Only set Torn key if it's valid
-          if (publicKeyInput && tornValidation === "valid") {
-            setPublicKey(publicKeyInput, true);
-          }
-
-          // Handle FFScouter key (optional)
-          if (ffscouterKeyInput) {
-            // Only set if validated and valid
-            if (ffscouterValidation === "valid") {
-              setFFScouterKey(ffscouterKeyInput, true);
-            }
-            // If invalid, don't set it (early return handled by disabled state)
-          } else {
-            // Clear FFScouter key if input is empty
-            setFFScouterKey(undefined, true);
-          }
-        }}
-        disabled={
-          !publicKeyInput ||
-          tornValidation !== "valid" ||
-          (!!ffscouterKeyInput && ffscouterValidation === "invalid")
-        }
-      >
-        Set Credentials
+      <Button type="submit" disabled={!publicKeyInput?.trim() || isValidating}>
+        {isValidating && <Loader2 className="size-4 animate-spin" />}
+        {isValidating ? "Validating…" : "Validate"}
       </Button>
-    </div>
+    </form>
+  );
+}
+
+function KeyHelp({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label={label}
+          className="text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm p-0.5"
+        >
+          <Info className="size-3.5" aria-hidden="true" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-72" sideOffset={6}>
+        {children}
+      </TooltipContent>
+    </Tooltip>
   );
 }
