@@ -34,7 +34,7 @@ export function SettingsSheet() {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="outline">
+        <Button variant="outline" aria-label="Settings">
           <SettingsIcon />
         </Button>
       </SheetTrigger>

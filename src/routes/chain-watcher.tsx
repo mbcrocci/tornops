@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ChainWatcher } from "@/components/chain-watcher";
 import { CredentialsCard } from "@/components/credentials";
-import { SettingsSheet } from "@/components/settings";
 import { useCredentialsStore } from "@/lib/stores";
 
 export const Route = createFileRoute("/chain-watcher")({
@@ -23,9 +22,6 @@ function ChainWatcherPage() {
 
   return (
     <>
-      <div className="absolute right-2 top-2">
-        <SettingsSheet />
-      </div>
       <ChainWatcher />
     </>
   );

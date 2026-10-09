@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AttackHistory } from "@/components/attack-history";
 import { CredentialsCard } from "@/components/credentials";
-import { SettingsSheet } from "@/components/settings";
 import { useCredentialsStore } from "@/lib/stores";
 
 export const Route = createFileRoute("/attack-history")({
@@ -21,7 +20,6 @@ function AttackHistoryPage() {
 
   return (
     <>
-      <div className="absolute right-2 top-2 z-20"><SettingsSheet /></div>
       <AttackHistory />
     </>
   );

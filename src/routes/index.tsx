@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Chains } from "@/components/chain";
 import { CredentialsCard } from "@/components/credentials";
 import { FactionComparison } from "@/components/faction/faction-comparison";
-import { SettingsSheet } from "@/components/settings";
 import { UserStatus } from "@/components/user-status";
 import { useCredentialsStore } from "@/lib/stores";
 
@@ -29,9 +28,6 @@ function App() {
 
   return (
     <div className="container mx-auto p-2 flex flex-col gap-2">
-      <div className="flex justify-end absolute top-2 right-2">
-        <SettingsSheet />
-      </div>
       <div className="flex flex-col md:flex-row gap-2 w-full">
         <UserStatus />
         <Chains />

@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CredentialsCard } from "@/components/credentials";
 import { FFScouterActivityHistory } from "@/components/ffscouter-activity-history";
-import { SettingsSheet } from "@/components/settings";
 import { useCredentialsStore } from "@/lib/stores";
 
 export const Route = createFileRoute("/online-activity")({
@@ -21,9 +20,6 @@ function OnlineActivityPage() {
 
   return (
     <>
-      <div className="absolute right-2 top-2 z-20">
-        <SettingsSheet />
-      </div>
       <FFScouterActivityHistory />
     </>
   );

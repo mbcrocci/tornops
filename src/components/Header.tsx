@@ -1,6 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { Activity, Radio, Swords } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useUserData } from "@/hooks/use-torn";
+import { useCredentialsStore } from "@/lib/stores";
+import { SettingsSheet } from "@/components/settings";
 
 const links = [
   { to: "/", label: "War room", icon: Swords },
@@ -9,11 +12,45 @@ const links = [
   { to: "/online-activity", label: "Online activity", icon: Radio },
 ] as const;
 
-export default function Header() {
+function UserIdentification() {
+  const { data: user } = useUserData();
+
+  if (!user?.name || !user.player_id) return null;
+
+  const activityStatus = user.last_action?.status ?? "Unknown";
+  const statusColor =
+    activityStatus === "Online"
+      ? "bg-green-500"
+      : activityStatus === "Idle"
+        ? "bg-yellow-500"
+        : "bg-gray-400";
+
   return (
-    <header className="border-b bg-background/95 pr-14 backdrop-blur">
+    <div className="max-w-28 rounded-md border bg-muted/30 px-2.5 py-1 text-left leading-tight sm:max-w-48">
+      <div className="flex items-center justify-between gap-1.5 text-xs font-medium">
+        <span className="truncate" title={user.name}>
+          {user.name}
+        </span>
+        <span
+          className={cn("size-2 shrink-0 rounded-full", statusColor)}
+          role="img"
+          aria-label={activityStatus}
+          title={activityStatus}
+        />
+      </div>
+      <div className="text-[10px] text-muted-foreground">ID: {user.player_id}</div>
+    </div>
+  );
+}
+
+export default function Header() {
+  const { publicKey, isTornKeyValid } = useCredentialsStore();
+  const isLoggedIn = Boolean(publicKey) && isTornKeyValid !== false;
+
+  return (
+    <header className="flex items-center border-b bg-background/95 backdrop-blur">
       <nav
-        className="mx-auto flex h-12 max-w-[1500px] items-center gap-1 overflow-x-auto px-3 sm:px-6"
+        className="mx-auto flex h-12 min-w-0 max-w-[1500px] flex-1 items-center gap-1 overflow-x-auto px-3 sm:px-6"
         aria-label="Main navigation"
       >
         <span className="mr-3 hidden font-mono text-xs font-bold tracking-[0.18em] sm:inline">
@@ -32,6 +69,12 @@ export default function Header() {
           </Link>
         ))}
       </nav>
+      {isLoggedIn && (
+        <div className="flex shrink-0 items-center gap-3 pr-2">
+          <UserIdentification />
+          <SettingsSheet />
+        </div>
+      )}
     </header>
   );
 }
