@@ -73,33 +73,6 @@ export const columns: ColumnDef<EnemyFactionMember>[] = [
     },
   },
   {
-    header: "Actions",
-    accessorKey: "actions",
-    enableSorting: false,
-    cell: ({ row }) => {
-      return (
-        <div className="flex gap-2">
-          <a
-            href={playerProfileLink(row.original.id)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={buttonVariants({ variant: "outline" })}
-          >
-            <Eye />
-          </a>
-          <a
-            href={playerAttackLink(row.original.id)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={buttonVariants({ variant: "outline" })}
-          >
-            <Swords />
-          </a>
-        </div>
-      );
-    },
-  },
-  {
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Level" />
     ),
@@ -245,31 +218,54 @@ export const columns: ColumnDef<EnemyFactionMember>[] = [
     },
   },
   {
-    header: () => (
-      <Tooltip>
-        <TooltipTrigger>Pin</TooltipTrigger>
-        <TooltipContent>
-          <p>
-            Toggle to pin or unpin a member to keep them at the top of the list.
-          </p>
-        </TooltipContent>
-      </Tooltip>
-    ),
-    accessorKey: "pinned",
+    header: "Actions",
+    accessorKey: "actions",
     enableSorting: false,
     cell: ({ row }) => {
-      const selected = row.getIsSelected();
-
       return (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => {
-            row.toggleSelected();
-          }}
-        >
-          {selected ? <PinOff /> : <Pin />}
-        </Button>
+        <div className="flex gap-2">
+          <Tooltip delayDuration={750}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                aria-label={row.getIsSelected() ? "Unpin member" : "Pin member"}
+                aria-pressed={row.getIsSelected()}
+                onClick={() => row.toggleSelected()}
+              >
+                {row.getIsSelected() ? <PinOff /> : <Pin />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{row.getIsSelected() ? "Unpin member" : "Pin member to top"}</TooltipContent>
+          </Tooltip>
+          <Tooltip delayDuration={750}>
+            <TooltipTrigger asChild>
+              <a
+                aria-label="View profile"
+                href={playerProfileLink(row.original.id)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={buttonVariants({ variant: "outline" })}
+              >
+                <Eye />
+              </a>
+            </TooltipTrigger>
+            <TooltipContent>View profile</TooltipContent>
+          </Tooltip>
+          <Tooltip delayDuration={750}>
+            <TooltipTrigger asChild>
+              <a
+                aria-label="Attack"
+                href={playerAttackLink(row.original.id)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={buttonVariants({ variant: "outline" })}
+              >
+                <Swords />
+              </a>
+            </TooltipTrigger>
+            <TooltipContent>Attack</TooltipContent>
+          </Tooltip>
+        </div>
       );
     },
   },

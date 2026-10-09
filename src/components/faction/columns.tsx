@@ -102,22 +102,47 @@ const actionsColumn: ColumnDef<FactionMember> = {
   cell: ({ row }) => {
     return (
       <div className="flex gap-2">
-        <a
-          href={playerProfileLink(row.original.id)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={buttonVariants({ variant: "outline" })}
-        >
-          <Eye />
-        </a>
-        <a
-          href={playerAttackLink(row.original.id)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={buttonVariants({ variant: "outline" })}
-        >
-          <Swords />
-        </a>
+        <Tooltip delayDuration={750}>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              aria-label={row.getIsSelected() ? "Unpin member" : "Pin member"}
+              aria-pressed={row.getIsSelected()}
+              onClick={() => row.toggleSelected()}
+            >
+              {row.getIsSelected() ? <PinOff /> : <Pin />}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{row.getIsSelected() ? "Unpin member" : "Pin member to top"}</TooltipContent>
+        </Tooltip>
+        <Tooltip delayDuration={750}>
+          <TooltipTrigger asChild>
+            <a
+              aria-label="View profile"
+              href={playerProfileLink(row.original.id)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonVariants({ variant: "outline" })}
+            >
+              <Eye />
+            </a>
+          </TooltipTrigger>
+          <TooltipContent>View profile</TooltipContent>
+        </Tooltip>
+        <Tooltip delayDuration={750}>
+          <TooltipTrigger asChild>
+            <a
+              aria-label="Attack"
+              href={playerAttackLink(row.original.id)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonVariants({ variant: "outline" })}
+            >
+              <Swords />
+            </a>
+          </TooltipTrigger>
+          <TooltipContent>Attack</TooltipContent>
+        </Tooltip>
       </div>
     );
   },
@@ -128,22 +153,48 @@ const actionsColumnMobile: ColumnDef<FactionMember> = {
   cell: ({ row }) => {
     return (
       <div className="flex gap-1">
-        <a
-          href={playerProfileLink(row.original.id)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={buttonVariants({ variant: "outline", size: "icon-sm" })}
-        >
-          <Eye className="size-4" />
-        </a>
-        <a
-          href={playerAttackLink(row.original.id)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={buttonVariants({ variant: "outline", size: "icon-sm" })}
-        >
-          <Swords className="size-4" />
-        </a>
+        <Tooltip delayDuration={750}>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              aria-label={row.getIsSelected() ? "Unpin member" : "Pin member"}
+              aria-pressed={row.getIsSelected()}
+              onClick={() => row.toggleSelected()}
+            >
+              {row.getIsSelected() ? <PinOff className="size-4" /> : <Pin className="size-4" />}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{row.getIsSelected() ? "Unpin member" : "Pin member to top"}</TooltipContent>
+        </Tooltip>
+        <Tooltip delayDuration={750}>
+          <TooltipTrigger asChild>
+            <a
+              aria-label="View profile"
+              href={playerProfileLink(row.original.id)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonVariants({ variant: "outline", size: "icon-sm" })}
+            >
+              <Eye className="size-4" />
+            </a>
+          </TooltipTrigger>
+          <TooltipContent>View profile</TooltipContent>
+        </Tooltip>
+        <Tooltip delayDuration={750}>
+          <TooltipTrigger asChild>
+            <a
+              aria-label="Attack"
+              href={playerAttackLink(row.original.id)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonVariants({ variant: "outline", size: "icon-sm" })}
+            >
+              <Swords className="size-4" />
+            </a>
+          </TooltipTrigger>
+          <TooltipContent>Attack</TooltipContent>
+        </Tooltip>
       </div>
     );
   },
@@ -339,55 +390,6 @@ const lastActionColumn: ColumnDef<FactionMember> = {
   },
 };
 
-const pinnedColumn: ColumnDef<FactionMember> = {
-  header: () => (
-    <Tooltip>
-      <TooltipTrigger>Pin</TooltipTrigger>
-      <TooltipContent>
-        <p>
-          Toggle to pin or unpin a member to keep them at the top of the list.
-        </p>
-      </TooltipContent>
-    </Tooltip>
-  ),
-  accessorKey: "pinned",
-  enableSorting: false,
-  cell: ({ row }) => {
-    const selected = row.getIsSelected();
-
-    return (
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => {
-          row.toggleSelected();
-        }}
-      >
-        {selected ? <PinOff /> : <Pin />}
-      </Button>
-    );
-  },
-};
-
-const pinnedColumnMobile: ColumnDef<FactionMember> = {
-  ...pinnedColumn,
-  cell: ({ row }) => {
-    const selected = row.getIsSelected();
-
-    return (
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => {
-          row.toggleSelected();
-        }}
-      >
-        {selected ? <PinOff className="size-4" /> : <Pin className="size-4" />}
-      </Button>
-    );
-  },
-};
-
 export function useFactionColumns(): ColumnDef<FactionMember>[] {
   const isMobile = useIsMobile();
 
@@ -398,20 +400,18 @@ export function useFactionColumns(): ColumnDef<FactionMember>[] {
         nameColumn,
         statusColumnMobile,
         actionsColumnMobile,
-        pinnedColumnMobile,
       ];
     }
 
     return [
       onlineColumn,
       nameColumn,
-      actionsColumn,
       levelColumn,
       statusColumn,
       ffColumn,
       battleStatsColumn,
       lastActionColumn,
-      pinnedColumn,
+      actionsColumn,
     ];
   }, [isMobile]);
 }
