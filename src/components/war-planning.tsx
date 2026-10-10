@@ -32,7 +32,8 @@ import { buildPlanMessage } from "@/lib/war-plan-message";
 
 const HOUR = 3_600_000;
 const HISTORY_DAYS = 28;
-const MIN_DAYS = 3;
+// Below this, plans are hints rather than patterns.
+const SOLID_DAYS = 7;
 const TIMELINE_HOURS = 48;
 const ZONES = [
   { value: "UTC", label: "Torn time (TCT)", short: "TCT" },
@@ -287,39 +288,15 @@ export function WarPlanning() {
           <RefreshCw className="size-4 animate-spin" />
           Loading {HISTORY_DAYS} days of activity for both factions… this takes a moment.
         </div>
-      ) : days < MIN_DAYS ? (
-        <Notice title="Not enough activity history yet">
-          Only {days} {days === 1 ? "day" : "days"} of activity for{" "}
-          {theirs.daysObserved < MIN_DAYS ? "the enemy" : "our faction"}. Suggestions need at least{" "}
-          {MIN_DAYS} days.{" "}
-          {activityError
-            ? `FFScouter activity history is unavailable (${activityError}), so TornOps relies on presence it records itself. Keep this page or the war room open to build history.`
-            : "FFScouter has no history for them yet. Keep this page or the war room open to record presence directly."}
-        </Notice>
       ) : (
         <div className="space-y-5">
-          <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            <span>
-              Based on {Math.min(HISTORY_DAYS, days)} days of{" "}
-              {activityError
-                ? "presence recorded by TornOps"
-                : "FFScouter activity plus presence recorded by TornOps"}
-              .
-            </span>
-            <span>
-              History for {theirs.covered}/{theirs.members.length} of them and {ours.covered}/
-              {ours.members.length} of us
-              {missing && !activityError ? ` (${missing} enemies could not be loaded)` : ""}.
-            </span>
-          </p>
-
-          {activityError && (
-            <p className="rounded-lg border border-amber-500/40 bg-amber-500/5 px-4 py-3 text-sm">
-              <strong>FFScouter activity history is unavailable</strong> ({activityError}). Planning
-              uses presence TornOps recorded while this page or the war room was open. Keep one of
-              them open to build history.
-            </p>
-          )}
+          <DataQuality
+            ours={ours}
+            theirs={theirs}
+            days={days}
+            activityError={activityError}
+            missing={missing}
+          />
 
           {statsError && (
             <p role="alert" className="text-sm text-destructive">
@@ -442,6 +419,81 @@ export function WarPlanning() {
   );
 }
 
+function dayCount(days: number) {
+  const capped = Math.min(HISTORY_DAYS, days);
+  return `${capped} ${capped === 1 ? "day" : "days"}`;
+}
+
+function DataQuality({
+  ours,
+  theirs,
+  days,
+  activityError,
+  missing,
+}: {
+  ours: SideAnalysis;
+  theirs: SideAnalysis;
+  days: number;
+  activityError?: string;
+  missing: number;
+}) {
+  const hoursCovered = ours.hourly.filter(
+    (hour, i) => hour.days > 0 && theirs.hourly[i].days > 0,
+  ).length;
+  const thin = days < SOLID_DAYS || hoursCovered < 20;
+  const source = activityError
+    ? "presence TornOps recorded in this browser"
+    : "FFScouter activity plus presence TornOps recorded";
+  return (
+    <section
+      aria-label="Data behind this plan"
+      className={cn(
+        "rounded-lg border px-4 py-3 text-sm",
+        thin ? "border-amber-500/40 bg-amber-500/5" : "bg-muted/30",
+      )}
+    >
+      <p className="flex items-start gap-2">
+        {thin && <AlertCircle className="mt-0.5 size-4 shrink-0 text-amber-600" />}
+        <span>
+          <strong>
+            {days === 0
+              ? "No activity recorded yet."
+              : thin
+                ? "Limited data: treat suggestions as hints, not patterns."
+                : "Data behind this plan"}
+          </strong>{" "}
+          Based on {dayCount(days)} of {source}, covering {hoursCovered} of 24 hours of the day for
+          both sides.
+        </span>
+      </p>
+      <ul className="mt-2 grid gap-x-6 gap-y-1 text-xs text-muted-foreground sm:grid-cols-2">
+        <li>
+          Them: {dayCount(theirs.daysObserved)}, {theirs.covered}/{theirs.members.length} members
+          observed
+          {missing && !activityError ? ` (${missing} could not be loaded)` : ""}
+        </li>
+        <li>
+          Us: {dayCount(ours.daysObserved)}, {ours.covered}/{ours.members.length} members observed
+        </li>
+        <li>Grey hours were never observed and are never suggested.</li>
+        <li>Each window shows how many days back it; 1–2 days can be a coincidence.</li>
+      </ul>
+      {activityError && (
+        <details className="mt-2 text-xs text-muted-foreground">
+          <summary className="cursor-pointer">How this data is gathered</summary>
+          <p className="mt-1">
+            FFScouter activity history is unavailable ({activityError}). Instead TornOps saves who
+            is online whenever the war room or this page refreshes both factions: one snapshot a
+            minute, kept for 30 days in this browser only. Opening TornOps at different times of day
+            fills the grey hours fastest. With FFScouter Premium you get 28 days of every hour
+            immediately.
+          </p>
+        </details>
+      )}
+    </section>
+  );
+}
+
 function Shell({
   children,
   subtitle,
@@ -508,6 +560,11 @@ function WindowCard({
 }) {
   const kind = KIND[suggestion.kind];
   const Icon = kind.icon;
+  const dataDays = Math.min(
+    HISTORY_DAYS,
+    suggestion.ours.days,
+    suggestion.kind === "chain" ? Infinity : suggestion.theirs.days,
+  );
   const detail =
     suggestion.kind === "chain"
       ? `Only ~${suggestion.ours.count.toFixed(1)} of us usually online. Line up chain watchers.`
@@ -537,14 +594,14 @@ function WindowCard({
       <span className="mt-2 block font-mono text-lg font-semibold tabular-nums">{when.text}</span>
       <span className="text-xs text-muted-foreground">{when.relative}</span>
       <span className="mt-2 block text-sm">{detail}</span>
-      <span className="mt-1 block text-xs text-muted-foreground">
-        From{" "}
-        {Math.min(
-          HISTORY_DAYS,
-          suggestion.ours.days,
-          suggestion.kind === "chain" ? Infinity : suggestion.theirs.days,
-        )}{" "}
-        days of data
+      <span
+        className={cn(
+          "mt-1 block text-xs",
+          dataDays < 3 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground",
+        )}
+      >
+        From {dataDays} {dataDays === 1 ? "day" : "days"} of data
+        {dataDays < 3 && " · could be a coincidence"}
       </span>
     </button>
   );

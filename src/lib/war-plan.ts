@@ -194,7 +194,7 @@ export function suggestWindows(
   ours: SideAnalysis,
   theirs: SideAnalysis,
   length: number,
-  { chainThreshold = 3, minDays = 2 } = {},
+  { chainThreshold = 3, minDays = 1 } = {},
 ): SuggestedWindow[] {
   const ourMax = Math.max(1e-9, ...ours.windows.map((w) => w.count));
   // Fall back to headcount if there are no battle stat estimates for the enemy.
