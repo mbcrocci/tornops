@@ -8,8 +8,9 @@ import { SettingsSheet } from "@/components/settings";
 const links = [
   { to: "/", label: "War room", icon: Swords },
   { to: "/chain-watcher", label: "Chain watcher", icon: Activity },
-  { to: "/attack-history", label: "Attack history", icon: Swords },
-  { to: "/online-activity", label: "Online activity", icon: Radio },
+  { to: "/war-planning", label: "War planning", icon: Radio },
+  { to: "/attack-history", label: "Faction attack history", icon: Swords },
+  { to: "/online-activity", label: "Faction online activity", icon: Radio },
 ] as const;
 
 function UserIdentification() {

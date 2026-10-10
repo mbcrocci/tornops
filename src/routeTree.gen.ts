@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AttackHistoryRouteImport } from './routes/attack-history'
 import { Route as ChainWatcherRouteImport } from './routes/chain-watcher'
 import { Route as OnlineActivityRouteImport } from './routes/online-activity'
+import { Route as WarPlanningRouteImport } from './routes/war-planning'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,18 +35,25 @@ const OnlineActivityRoute = OnlineActivityRouteImport.update({
   path: '/online-activity',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WarPlanningRoute = WarPlanningRouteImport.update({
+  id: '/war-planning',
+  path: '/war-planning',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/attack-history': typeof AttackHistoryRoute
   '/chain-watcher': typeof ChainWatcherRoute
   '/online-activity': typeof OnlineActivityRoute
+  '/war-planning': typeof WarPlanningRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/attack-history': typeof AttackHistoryRoute
   '/chain-watcher': typeof ChainWatcherRoute
   '/online-activity': typeof OnlineActivityRoute
+  '/war-planning': typeof WarPlanningRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,14 +61,30 @@ export interface FileRoutesById {
   '/attack-history': typeof AttackHistoryRoute
   '/chain-watcher': typeof ChainWatcherRoute
   '/online-activity': typeof OnlineActivityRoute
+  '/war-planning': typeof WarPlanningRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/attack-history' | '/chain-watcher' | '/online-activity'
+  fullPaths:
+    | '/'
+    | '/attack-history'
+    | '/chain-watcher'
+    | '/online-activity'
+    | '/war-planning'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/attack-history' | '/chain-watcher' | '/online-activity'
+  to:
+    | '/'
+    | '/attack-history'
+    | '/chain-watcher'
+    | '/online-activity'
+    | '/war-planning'
   id:
-    '__root__' | '/' | '/attack-history' | '/chain-watcher' | '/online-activity'
+    | '__root__'
+    | '/'
+    | '/attack-history'
+    | '/chain-watcher'
+    | '/online-activity'
+    | '/war-planning'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -68,6 +92,7 @@ export interface RootRouteChildren {
   AttackHistoryRoute: typeof AttackHistoryRoute
   ChainWatcherRoute: typeof ChainWatcherRoute
   OnlineActivityRoute: typeof OnlineActivityRoute
+  WarPlanningRoute: typeof WarPlanningRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -100,6 +125,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnlineActivityRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/war-planning': {
+      id: '/war-planning'
+      path: '/war-planning'
+      fullPath: '/war-planning'
+      preLoaderRoute: typeof WarPlanningRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -108,6 +140,7 @@ const rootRouteChildren: RootRouteChildren = {
   AttackHistoryRoute: AttackHistoryRoute,
   ChainWatcherRoute: ChainWatcherRoute,
   OnlineActivityRoute: OnlineActivityRoute,
+  WarPlanningRoute: WarPlanningRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

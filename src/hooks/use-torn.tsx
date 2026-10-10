@@ -17,6 +17,7 @@ import type {
   FactionRankedWar,
 } from "@/lib/faction";
 import { type EnemyMember, useCredentialsStore, useGlobalStore } from "@/lib/stores";
+import { observeFactionResponse } from "@/lib/faction-presence";
 import type { User } from "@/lib/user";
 import { useFFScouterData } from "./use-ffscouter";
 import { useObserveTravel } from "./use-travel-estimates";
@@ -69,7 +70,9 @@ const getUserFaction = async (key: string) => {
   params.set("key", key);
 
   const response = await fetch(`${url}?${params.toString()}`);
-  return response.json() as Promise<Faction>;
+  const data = (await response.json()) as Faction;
+  if (response.ok) await observeFactionResponse(data);
+  return data;
 };
 
 const getUserFactionChain = async (key: string) => {
@@ -345,7 +348,9 @@ const getUserFactionData = async (key: string) => {
   const response = await fetch(`${url}?${params.toString()}`, {
     headers: { Authorization: `ApiKey ${key}` },
   });
-  return response.json() as Promise<Faction>;
+  const data = (await response.json()) as Faction;
+  if (response.ok) await observeFactionResponse(data);
+  return data;
 };
 
 const getEnemyFactionData = async (enemyFactionId: number, key: string) => {
@@ -360,7 +365,9 @@ const getEnemyFactionData = async (enemyFactionId: number, key: string) => {
   params.set("key", key);
 
   const response = await fetch(`${url}?${params.toString()}`);
-  return response.json() as Promise<Faction>;
+  const data = (await response.json()) as Faction;
+  if (response.ok) await observeFactionResponse(data, enemyFactionId);
+  return data;
 };
 
 const getEnemyFactionChain = async (enemyFactionId: number, key: string) => {
