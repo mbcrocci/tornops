@@ -4,6 +4,7 @@ import type { FFScouterData } from "@/hooks/use-ffscouter";
 import type { Member } from "@/lib/faction";
 import { playerAttackLink, playerProfileLink } from "@/lib/links";
 import { cleanStatusDescription, getStatusBgColorClass } from "@/lib/status";
+import { CommunicationsMenu } from "../communications-menu";
 import { DataTableColumnHeader } from "../data-table-column-header";
 import { HospitalCountdown } from "../hospital-countdown";
 import { TravelCountdown } from "../travel-countdown";
@@ -242,6 +243,7 @@ export const columns: ColumnDef<EnemyFactionMember>[] = [
             </TooltipTrigger>
             <TooltipContent>Attack</TooltipContent>
           </Tooltip>
+          <CommunicationsMenu player={row.original} />
         </div>
       );
     },

@@ -6,6 +6,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import type { Member } from "@/lib/faction";
 import { playerAttackLink, playerProfileLink } from "@/lib/links";
 import { cleanStatusDescription, getStatusBgColorClass } from "@/lib/status";
+import { CommunicationsMenu } from "../communications-menu";
 import { DataTableColumnHeader } from "../data-table-column-header";
 import { HospitalCountdown } from "../hospital-countdown";
 import { TravelCountdown } from "../travel-countdown";
@@ -134,6 +135,7 @@ const actionsColumn: ColumnDef<FactionMember> = {
           </TooltipTrigger>
           <TooltipContent>Attack</TooltipContent>
         </Tooltip>
+        <CommunicationsMenu player={row.original} />
       </div>
     );
   },
@@ -188,6 +190,7 @@ const actionsColumnMobile: ColumnDef<FactionMember> = {
           </TooltipTrigger>
           <TooltipContent>Attack</TooltipContent>
         </Tooltip>
+        <CommunicationsMenu player={row.original} size="icon-sm" />
       </div>
     );
   },

@@ -87,6 +87,7 @@ interface GlobalState {
   lastRefreshTime: number | undefined;
   collapsedCards: boolean;
   chainAttackActivity: ObservedChainActivity[];
+  communicationEmojis: boolean;
   setRefetchInterval: (refetchInterval: number) => void;
   setEnemyFactionId: (enemyFactionId?: number) => void;
   setEnemyFaction: (enemyFaction?: EnemyFaction) => void;
@@ -98,6 +99,7 @@ interface GlobalState {
   setCollapsedCards: (collapsedCards: boolean) => void;
   addChainAttackActivity: (activity: ObservedChainActivity[]) => void;
   clearChainAttackActivity: () => void;
+  setCommunicationEmojis: (communicationEmojis: boolean) => void;
 }
 
 export const useGlobalStore = create<GlobalState>()(
@@ -117,6 +119,7 @@ export const useGlobalStore = create<GlobalState>()(
       lastRefreshTime: undefined,
       collapsedCards: false,
       chainAttackActivity: [],
+      communicationEmojis: true,
 
       setRefetchInterval: (refetchInterval: number) => set({ refetchInterval }),
       setEnemyFactionId: (enemyFactionId?: number) => set({ enemyFactionId }),
@@ -132,6 +135,7 @@ export const useGlobalStore = create<GlobalState>()(
           chainAttackActivity: [...activity, ...state.chainAttackActivity].slice(0, 10),
         })),
       clearChainAttackActivity: () => set({ chainAttackActivity: [] }),
+      setCommunicationEmojis: (communicationEmojis: boolean) => set({ communicationEmojis }),
     }),
     {
       name: "tornops-monitor",

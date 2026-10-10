@@ -11,6 +11,7 @@ import { useGlobalStore } from "@/lib/stores";
 import { THEME_PRESETS, useTheme, type ThemeMode } from "@/components/theme";
 import { CredentialsInput } from "./credentials";
 import { Button } from "./ui/button";
+import { Checkbox } from "./ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,6 +49,7 @@ export function SettingsSheet() {
           <CredentialsInput />
           <EnemyFactionInput />
           <RefreshIntervalInput />
+          <CommunicationEmojisToggle />
         </div>
       </SheetContent>
     </Sheet>
@@ -227,6 +229,27 @@ function RefreshIntervalInput() {
       <p className="text-sm text-muted-foreground">
         Current: {refetchInterval / 1000}s ({refetchInterval}ms)
       </p>
+    </div>
+  );
+}
+
+function CommunicationEmojisToggle() {
+  const communicationEmojis = useGlobalStore((state) => state.communicationEmojis);
+  const setCommunicationEmojis = useGlobalStore((state) => state.setCommunicationEmojis);
+
+  return (
+    <div className="flex items-start gap-3">
+      <Checkbox
+        id="communication-emojis"
+        checked={communicationEmojis}
+        onCheckedChange={(checked) => setCommunicationEmojis(checked === true)}
+      />
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="communication-emojis">Emojis in communications</Label>
+        <p className="text-sm text-muted-foreground">
+          Start copied chat messages with an emoji, like 🆘 or 🎯.
+        </p>
+      </div>
     </div>
   );
 }
