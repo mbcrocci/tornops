@@ -43,6 +43,7 @@ export type FFScouterMemberActivityBatch = {
   members: FFScouterMemberActivity[];
   failedPlayerIds: number[];
   omittedPlayerIds: number[];
+  firstError?: string;
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -135,37 +136,44 @@ export const useFFScouterMemberActivity = (
   start: number,
   end: number,
   enabled: boolean,
+  limit = 55,
 ) => {
   const key = useCredentialsStore((state) => state.ffscouterKey ?? "");
-  const ids = playerIds.slice(0, 55);
+  const ids = playerIds.slice(0, limit);
 
   return useQuery({
     queryKey: ["ffscouter-member-activity", ids, start, end, key],
     queryFn: async (): Promise<FFScouterMemberActivityBatch> => {
       const members: FFScouterMemberActivity[] = [];
       const failedPlayerIds: number[] = [];
+      let firstError: string | undefined;
       const concurrency = 6;
       let cursor = 0;
 
+      // Stop early when nothing has succeeded, e.g. a key without Premium access.
+      const giveUp = () => firstError !== undefined && members.length === 0;
       const worker = async () => {
-        while (cursor < ids.length) {
+        while (cursor < ids.length && !giveUp()) {
           const playerId = ids[cursor];
           cursor += 1;
           try {
             const result = await getActivity(key, { playerId }, start, end);
             members.push({ playerId, buckets: result.buckets });
-          } catch {
+          } catch (error) {
             failedPlayerIds.push(playerId);
+            firstError ??= error instanceof Error ? error.message : String(error);
           }
         }
       };
 
       await Promise.all(Array.from({ length: Math.min(concurrency, ids.length) }, () => worker()));
+      failedPlayerIds.push(...ids.slice(cursor));
 
       return {
         members,
         failedPlayerIds,
-        omittedPlayerIds: playerIds.slice(55),
+        omittedPlayerIds: playerIds.slice(limit),
+        firstError,
       };
     },
     enabled: Boolean(enabled && key && ids.length && start < end),

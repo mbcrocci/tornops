@@ -1,18 +1,16 @@
 // @vitest-environment jsdom
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import { cleanup, render, renderHook, screen, waitFor } from "@testing-library/react";
+import { cleanup, renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useUserFaction, useUserFactionData, useEnemyFactionData } from "./use-torn";
 import { useCredentialsStore, useGlobalStore } from "@/lib/stores";
 import { usePresenceHistoryState } from "@/lib/faction-presence";
-import { readActivity, readActivityFactions, recordObservation } from "@/lib/activity-tracking";
-import { WarPlanning } from "@/components/war-planning";
+import { readActivity, recordObservation } from "@/lib/activity-tracking";
 
 vi.mock("@/lib/activity-tracking", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/activity-tracking")>()),
   recordObservation: vi.fn().mockResolvedValue(undefined),
-  readActivityFactions: vi.fn().mockResolvedValue([]),
   readActivity: vi.fn().mockResolvedValue([]),
 }));
 const faction = (id: number) => ({
@@ -35,7 +33,6 @@ beforeEach(() => {
     json: async () => faction(url.includes("/faction/42") ? 42 : 7),
   }));
   vi.mocked(recordObservation).mockResolvedValue(undefined);
-  vi.mocked(readActivityFactions).mockResolvedValue([]);
   vi.mocked(readActivity).mockResolvedValue([]);
   useCredentialsStore.setState({ publicKey: "test-key", isTornKeyValid: true });
   useGlobalStore.setState({ enemyFactionId: 42 });
@@ -102,15 +99,5 @@ describe("automatic faction presence history", () => {
     await result.current.refetch();
     expect(usePresenceHistoryState.getState().errors[7]).toBeUndefined();
     expect(usePresenceHistoryState.getState().revision).toBe(1);
-  });
-  it("opens saved history without starting faction requests or showing tracking controls", async () => {
-    vi.mocked(readActivityFactions).mockResolvedValue([{ id: 42, name: "Previous opponent" }]);
-    render(<WarPlanning />, { wrapper });
-    await screen.findByRole("button", { name: "Previous opponent · Opponent" });
-    await waitFor(() => expect(readActivity).toHaveBeenCalledWith(42));
-    expect(fetchMock).not.toHaveBeenCalled();
-    expect(screen.queryByRole("button", { name: "Track faction" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Pause tracking" })).toBeNull();
-    expect(screen.queryByRole("textbox", { name: "Faction ID" })).toBeNull();
   });
 });

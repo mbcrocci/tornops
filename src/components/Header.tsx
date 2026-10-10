@@ -10,7 +10,6 @@ const links = [
   { to: "/chain-watcher", label: "Chain watcher", icon: Activity },
   { to: "/war-planning", label: "War planning", icon: Radio },
   { to: "/attack-history", label: "Faction attack history", icon: Swords },
-  { to: "/online-activity", label: "Faction online activity", icon: Radio },
 ] as const;
 
 function UserIdentification() {
