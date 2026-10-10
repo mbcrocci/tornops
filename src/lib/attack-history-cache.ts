@@ -1,8 +1,5 @@
+import { ATTACK_HISTORY_STORE as STORE_NAME, openDatabase, requestResult } from "@/lib/db";
 import type { FactionAttack } from "@/lib/faction";
-
-const DATABASE_NAME = "tornops-attack-history";
-const STORE_NAME = "completed-wars";
-const DATABASE_VERSION = 1;
 
 export type WarAttackRange = { id: number; from: number; to: number };
 
@@ -15,23 +12,6 @@ export type CachedWarData = {
   range: WarAttackRange;
   attacks: FactionAttack[];
 };
-
-function openDatabase(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
-    request.onupgradeneeded = () => {
-      request.result.createObjectStore(STORE_NAME, { keyPath: "id" });
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
-function requestResult<T>(request: IDBRequest<T>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
 
 export async function attackCacheScope(apiKey: string): Promise<string | null> {
   try {

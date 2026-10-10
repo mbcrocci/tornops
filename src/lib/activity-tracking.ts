@@ -1,3 +1,4 @@
+import { ACTIVITY_STORE, openDatabase } from "./db";
 import type { Faction, StatusEnum } from "./faction";
 
 export const ACTIVITY_RETENTION_DAYS = 30;
@@ -44,25 +45,12 @@ export function addObservation(
   return row;
 }
 
-function openDatabase(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open("tornops-presence", 1);
-    request.onupgradeneeded = () => {
-      const store = request.result.createObjectStore("hours", { keyPath: "id" });
-      store.createIndex("factionId", "factionId");
-      store.createIndex("hour", "hour");
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(new Error("Browser activity storage could not be opened."));
-  });
-}
-
 export async function recordObservation(faction: Faction, at: number): Promise<void> {
   const db = await openDatabase();
   try {
     await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction("hours", "readwrite");
-      const store = tx.objectStore("hours");
+      const tx = db.transaction(ACTIVITY_STORE, "readwrite");
+      const store = tx.objectStore(ACTIVITY_STORE);
       const hour = Math.floor(at / 3_600_000) * 3_600_000;
       const request = store.get(`${faction.ID}:${hour}`);
       request.onsuccess = () => store.put(addObservation(request.result, faction, at));
@@ -90,8 +78,8 @@ export async function readActivity(factionId: number): Promise<ActivityHour[]> {
   try {
     return await new Promise((resolve, reject) => {
       const request = db
-        .transaction("hours")
-        .objectStore("hours")
+        .transaction(ACTIVITY_STORE)
+        .objectStore(ACTIVITY_STORE)
         .index("factionId")
         .getAll(factionId);
       request.onsuccess = () =>

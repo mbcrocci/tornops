@@ -1,8 +1,6 @@
+import { openDatabase, TRAVEL_STORE as STORE_NAME } from "./db";
 import type { TravelObservation } from "./travel";
 
-const DATABASE_NAME = "tornops-travel";
-const STORE_NAME = "observations";
-const DATABASE_VERSION = 1;
 const RETENTION_MS = 30 * 86_400_000;
 
 // Latest observation per member. `observedAt` is the last read, so a restored record
@@ -11,19 +9,6 @@ export type StoredTravelObservation = TravelObservation & {
   id: number;
   factionId: number;
 };
-
-function openDatabase(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
-    request.onupgradeneeded = () => {
-      const store = request.result.createObjectStore(STORE_NAME, { keyPath: "id" });
-      store.createIndex("factionId", "factionId");
-      store.createIndex("observedAt", "observedAt");
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(new Error("Browser travel storage could not be opened."));
-  });
-}
 
 async function readWhere(
   query: (store: IDBObjectStore) => IDBRequest<StoredTravelObservation[]>,
