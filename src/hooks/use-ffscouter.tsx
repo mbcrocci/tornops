@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useCredentialsStore, useGlobalStore } from "@/lib/stores";
+import { withTimeout } from "@/lib/utils";
 
 export type FFScouterData = {
   player_id: number;
@@ -109,7 +110,7 @@ export const useFFScouterData = (targets: number[]) => {
     queryFn: () => {
       if (!ffScouterKey || targets.length === 0) return [];
 
-      return getFFScouterData(ffScouterKey, targets);
+      return withTimeout(getFFScouterData(ffScouterKey, targets));
     },
     enabled: Boolean(ffScouterKey) && targets.length > 0,
     refetchInterval: refetchInterval,

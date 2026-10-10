@@ -19,6 +19,7 @@ import type {
 import { type EnemyMember, useCredentialsStore, useGlobalStore } from "@/lib/stores";
 import { observeFactionResponse } from "@/lib/faction-presence";
 import type { User } from "@/lib/user";
+import { withTimeout } from "@/lib/utils";
 import { useFFScouterData } from "./use-ffscouter";
 import { useObserveTravel } from "./use-travel-estimates";
 
@@ -397,7 +398,7 @@ export const useUserData = (refetchIntervalOverride?: number) => {
 
   return useQuery({
     queryKey: ["user-data", key],
-    queryFn: () => getUserData(key),
+    queryFn: () => withTimeout(getUserData(key)),
     refetchInterval: refetchIntervalOverride ?? refetchInterval,
   });
 };
@@ -410,7 +411,7 @@ export const useUserFaction = () => {
   return useQuery({
     queryKey: ["user-faction", key],
     queryFn: async () => {
-      const data = await getUserFaction(key);
+      const data = await withTimeout(getUserFaction(key));
 
       const factions = Object.values(data.ranked_wars)[0]?.factions ?? [];
       Object.keys(factions).forEach((key) => {
@@ -454,7 +455,7 @@ export const useEnemyFactionData = (refetchIntervalOverride?: number) => {
 
   return useQuery({
     queryKey: ["enemy-faction-data", enemyFactionId],
-    queryFn: () => getEnemyFactionData(enemyFactionId, publicKey),
+    queryFn: () => withTimeout(getEnemyFactionData(enemyFactionId, publicKey)),
     ...factionPolling(refetchIntervalOverride ?? refetchInterval),
   });
 };
@@ -465,7 +466,7 @@ export const useUserFactionChain = (refetchIntervalOverride?: number) => {
 
   return useQuery({
     queryKey: ["user-faction-chain", key],
-    queryFn: () => getUserFactionChain(key),
+    queryFn: () => withTimeout(getUserFactionChain(key)),
     refetchInterval: refetchIntervalOverride ?? refetchInterval,
   });
 };
@@ -476,7 +477,7 @@ export const useFactionChainReport = (enabled: boolean, refetchIntervalOverride?
 
   return useQuery({
     queryKey: ["faction-chain-report", key],
-    queryFn: () => getFactionChainReport(key),
+    queryFn: () => withTimeout(getFactionChainReport(key)),
     enabled: Boolean(key && enabled),
     refetchInterval: refetchIntervalOverride ?? refetchInterval,
   });
@@ -491,7 +492,7 @@ export const useFactionChainAttacks = (
 
   return useQuery({
     queryKey: ["faction-chain-attacks", chainStart, key],
-    queryFn: () => getChainAttacks(key, chainStart ?? 0),
+    queryFn: () => withTimeout(getChainAttacks(key, chainStart ?? 0)),
     enabled: Boolean(key && chainStart),
     refetchInterval: refetchIntervalOverride ?? refetchInterval,
   });
@@ -555,7 +556,7 @@ export const useEnemyFactionChain = () => {
 
   return useQuery({
     queryKey: ["enemy-faction-chain", enemyFactionId],
-    queryFn: () => getEnemyFactionChain(enemyFactionId, key),
+    queryFn: () => withTimeout(getEnemyFactionChain(enemyFactionId, key)),
     refetchInterval: refetchInterval,
   });
 };
@@ -618,7 +619,7 @@ export const useUserFactionData = (enabled = true) => {
 
   return useQuery({
     queryKey: ["user-faction-data", key],
-    queryFn: () => getUserFactionData(key),
+    queryFn: () => withTimeout(getUserFactionData(key)),
     enabled: Boolean(key && enabled),
     ...factionPolling(refetchInterval),
   });

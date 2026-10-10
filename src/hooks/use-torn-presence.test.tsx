@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import { cleanup, renderHook, waitFor } from "@testing-library/react";
+import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useUserFaction, useUserFactionData, useEnemyFactionData } from "./use-torn";
 import { useCredentialsStore, useGlobalStore } from "@/lib/stores";
@@ -99,5 +99,19 @@ describe("automatic faction presence history", () => {
     await result.current.refetch();
     expect(usePresenceHistoryState.getState().errors[7]).toBeUndefined();
     expect(usePresenceHistoryState.getState().revision).toBe(1);
+  });
+});
+
+describe("faction polling", () => {
+  it("keeps polling after a request that never settles", async () => {
+    vi.useFakeTimers();
+    try {
+      fetchMock.mockImplementationOnce(() => new Promise(() => {}));
+      const { result } = renderHook(() => useEnemyFactionData(), { wrapper });
+      await act(() => vi.advanceTimersByTimeAsync(60_000));
+      expect(result.current.data).toEqual(faction(42));
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
