@@ -16,6 +16,10 @@ export const travelTimes = {
   "South Africa": [297, 208, 149, 89],
 } as const;
 
+// Departures are only bounded by consecutive reads this close together. Longer gaps
+// (closed tab, reload after a deploy) would yield an arrival window too wide to trust.
+export const MAX_OBSERVATION_GAP = 5 * 60_000;
+
 type Destination = keyof typeof travelTimes;
 export type TravelEstimate = {
   destination: Destination;
@@ -64,9 +68,15 @@ export function observeTravel(
   const method = methods[methodIndex < 0 ? 1 : methodIndex];
   const duration = travelTimes[destination][methodIndex < 0 ? 1 : methodIndex] * 60_000;
 
+  const gap = previous ? observedAt - previous.observedAt : Infinity;
+
   if (previous?.status.state === "Traveling") {
     const estimate = previous.estimate;
-    if (estimate?.destination === destination && estimate.returning === returning) {
+    // After a gap the player may have landed and left again on a new flight, so only
+    // continue the estimate while the original flight cannot have landed yet.
+    const sameFlight =
+      estimate && (gap <= MAX_OBSERVATION_GAP || observedAt < estimate.earliestArrival);
+    if (sameFlight && estimate.destination === destination && estimate.returning === returning) {
       observation.estimate = {
         ...estimate,
         method,
@@ -81,8 +91,12 @@ export function observeTravel(
     return observation;
   }
 
-  // A departure can only be bounded if we observed the preceding status.
-  if (!previous || !["Okay", "Hospital", "Abroad"].includes(previous.status.state)) {
+  // A departure can only be bounded if we recently observed the preceding status.
+  if (
+    !previous ||
+    gap > MAX_OBSERVATION_GAP ||
+    !["Okay", "Hospital", "Abroad"].includes(previous.status.state)
+  ) {
     return observation;
   }
   const departedAt = (previous.observedAt + observedAt) / 2;

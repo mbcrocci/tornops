@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import type { StatusClass } from "./faction";
-import { observeTravel, travelTimes } from "./travel";
+import { MAX_OBSERVATION_GAP, observeTravel, travelTimes } from "./travel";
 
 const status = (
   state: StatusClass["state"],
@@ -75,5 +75,26 @@ describe("travel estimates", () => {
     expect(
       observeTravel(first, status("Traveling", "Traveling"), 110_000).estimate,
     ).toBeUndefined();
+  });
+  it("does not bound departures across a gap in observations", () => {
+    const before = observeTravel(undefined, status("Okay"), 100_000);
+    const after = observeTravel(
+      before,
+      status("Traveling", "Traveling to Mexico"),
+      100_000 + MAX_OBSERVATION_GAP + 1,
+    );
+    expect(after.estimate).toBeUndefined();
+  });
+  it("keeps an estimate across a gap while the flight cannot have landed", () => {
+    const home = observeTravel(undefined, status("Okay"), 100_000);
+    const outbound = observeTravel(home, status("Traveling", "Traveling to Japan"), 110_000);
+    const resumed = observeTravel(outbound, outbound.status, 110_000 + 60 * 60_000);
+    expect(resumed.estimate).toEqual(outbound.estimate);
+  });
+  it("drops an estimate after a gap in which the player could have flown again", () => {
+    const home = observeTravel(undefined, status("Okay"), 100_000);
+    const outbound = observeTravel(home, status("Traveling", "Traveling to Mexico"), 110_000);
+    const resumed = observeTravel(outbound, outbound.status, outbound.estimate!.earliestArrival);
+    expect(resumed.estimate).toBeUndefined();
   });
 });

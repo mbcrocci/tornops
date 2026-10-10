@@ -568,7 +568,7 @@ export const useEnemyMembers = (refetchIntervalOverride?: number) => {
     }));
   }, [enemyFactionData?.members]);
 
-  useObserveTravel(members, dataUpdatedAt);
+  useObserveTravel(enemyFactionData?.ID, members, dataUpdatedAt);
 
   // Get FF scouter data for all members
   const memberIds = useMemo(() => members.map((member) => member.id), [members]);
@@ -632,7 +632,7 @@ export const useUserMembers = () => {
     }));
   }, [userFactionData?.members]);
 
-  useObserveTravel(members, dataUpdatedAt);
+  useObserveTravel(userFactionData?.ID, members, dataUpdatedAt);
 
   // Get FF scouter data for all members
   const memberIds = useMemo(() => members.map((member) => member.id), [members]);
