@@ -24,9 +24,7 @@ function getOnlineColor(status: string) {
 }
 
 const onlineColumn: ColumnDef<FactionMember> = {
-  header: ({ column }) => (
-    <DataTableColumnHeader column={column} title="Online" />
-  ),
+  header: ({ column }) => <DataTableColumnHeader column={column} title="Online" />,
   accessorKey: "online",
   enableSorting: true,
   sortingFn: (rowA, rowB) => {
@@ -65,10 +63,7 @@ const onlineColumnMobile: ColumnDef<FactionMember> = {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <div
-            className={`${color} size-3 rounded-full shrink-0`}
-            aria-label={status}
-          />
+          <div className={`${color} size-3 rounded-full shrink-0`} aria-label={status} />
         </TooltipTrigger>
         <TooltipContent>{status}</TooltipContent>
       </Tooltip>
@@ -77,18 +72,12 @@ const onlineColumnMobile: ColumnDef<FactionMember> = {
 };
 
 const nameColumn: ColumnDef<FactionMember> = {
-  header: ({ column }) => (
-    <DataTableColumnHeader column={column} title="Name" />
-  ),
+  header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
   accessorKey: "name",
   enableSorting: true,
   cell: ({ row }) => {
     return (
-      <a
-        href={playerProfileLink(row.original.id)}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
+      <a href={playerProfileLink(row.original.id)} target="_blank" rel="noopener noreferrer">
         {row.original.name}
       </a>
     );
@@ -113,7 +102,9 @@ const actionsColumn: ColumnDef<FactionMember> = {
               {row.getIsSelected() ? <PinOff /> : <Pin />}
             </Button>
           </TooltipTrigger>
-          <TooltipContent>{row.getIsSelected() ? "Unpin member" : "Pin member to top"}</TooltipContent>
+          <TooltipContent>
+            {row.getIsSelected() ? "Unpin member" : "Pin member to top"}
+          </TooltipContent>
         </Tooltip>
         <Tooltip delayDuration={750}>
           <TooltipTrigger asChild>
@@ -165,7 +156,9 @@ const actionsColumnMobile: ColumnDef<FactionMember> = {
               {row.getIsSelected() ? <PinOff className="size-4" /> : <Pin className="size-4" />}
             </Button>
           </TooltipTrigger>
-          <TooltipContent>{row.getIsSelected() ? "Unpin member" : "Pin member to top"}</TooltipContent>
+          <TooltipContent>
+            {row.getIsSelected() ? "Unpin member" : "Pin member to top"}
+          </TooltipContent>
         </Tooltip>
         <Tooltip delayDuration={750}>
           <TooltipTrigger asChild>
@@ -201,9 +194,7 @@ const actionsColumnMobile: ColumnDef<FactionMember> = {
 };
 
 const levelColumn: ColumnDef<FactionMember> = {
-  header: ({ column }) => (
-    <DataTableColumnHeader column={column} title="Level" />
-  ),
+  header: ({ column }) => <DataTableColumnHeader column={column} title="Level" />,
   accessorKey: "level",
   enableSorting: true,
   cell: ({ row }) => {
@@ -212,9 +203,7 @@ const levelColumn: ColumnDef<FactionMember> = {
 };
 
 const statusColumn: ColumnDef<FactionMember> = {
-  header: ({ column }) => (
-    <DataTableColumnHeader column={column} title="Status" />
-  ),
+  header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
   accessorKey: "status",
   enableSorting: true,
   sortingFn: (rowA, rowB) => {
@@ -250,20 +239,16 @@ const statusColumn: ColumnDef<FactionMember> = {
     return (
       <div
         className={`${getStatusBgColorClass(
-          member.status.state
+          member.status.state,
         )} text-white font-semibold px-3 py-2 rounded-md text-center shadow-sm`}
       >
         {member.status.state === "Hospital" && member.status.until > 0 ? (
           <span>
-            {cleanStatusDescription(member.status.description) ||
-              member.status.state}
+            {cleanStatusDescription(member.status.description) || member.status.state}
             <HospitalCountdown until={member.status.until} />
           </span>
         ) : (
-          <span>
-            {cleanStatusDescription(member.status.description) ||
-              member.status.state}
-          </span>
+          <span>{cleanStatusDescription(member.status.description) || member.status.state}</span>
         )}
         <TravelCountdown id={member.id} status={member.status} />
       </div>
@@ -278,34 +263,30 @@ const statusColumnMobile: ColumnDef<FactionMember> = {
     return (
       <div
         className={`${getStatusBgColorClass(
-          member.status.state
+          member.status.state,
         )} text-white font-semibold px-2 py-1 rounded-md text-center shadow-sm text-xs max-w-[7rem] truncate`}
       >
         {member.status.state === "Hospital" && member.status.until > 0 ? (
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="block truncate">
-                {cleanStatusDescription(member.status.description) ||
-                  member.status.state}
+                {cleanStatusDescription(member.status.description) || member.status.state}
                 <HospitalCountdown until={member.status.until} />
               </span>
             </TooltipTrigger>
             <TooltipContent>
-              {cleanStatusDescription(member.status.description) ||
-                member.status.state}
+              {cleanStatusDescription(member.status.description) || member.status.state}
             </TooltipContent>
           </Tooltip>
         ) : (
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="block truncate">
-                {cleanStatusDescription(member.status.description) ||
-                  member.status.state}
+                {cleanStatusDescription(member.status.description) || member.status.state}
               </span>
             </TooltipTrigger>
             <TooltipContent>
-              {cleanStatusDescription(member.status.description) ||
-                member.status.state}
+              {cleanStatusDescription(member.status.description) || member.status.state}
             </TooltipContent>
           </Tooltip>
         )}
@@ -316,9 +297,7 @@ const statusColumnMobile: ColumnDef<FactionMember> = {
 };
 
 const ffColumn: ColumnDef<FactionMember> = {
-  header: ({ column }) => (
-    <DataTableColumnHeader column={column} title="FF" />
-  ),
+  header: ({ column }) => <DataTableColumnHeader column={column} title="FF" />,
   accessorKey: "ff",
   enableSorting: true,
   sortingFn: (rowA, rowB) => {
@@ -349,9 +328,7 @@ const ffColumn: ColumnDef<FactionMember> = {
 };
 
 const battleStatsColumn: ColumnDef<FactionMember> = {
-  header: ({ column }) => (
-    <DataTableColumnHeader column={column} title="Battle Stats" />
-  ),
+  header: ({ column }) => <DataTableColumnHeader column={column} title="Battle Stats" />,
   accessorKey: "battle_stats",
   enableSorting: true,
   sortingFn: (rowA, rowB) => {
@@ -374,16 +351,11 @@ const battleStatsColumn: ColumnDef<FactionMember> = {
 };
 
 const lastActionColumn: ColumnDef<FactionMember> = {
-  header: ({ column }) => (
-    <DataTableColumnHeader column={column} title="Last Action" />
-  ),
+  header: ({ column }) => <DataTableColumnHeader column={column} title="Last Action" />,
   accessorKey: "last_action",
   enableSorting: true,
   sortingFn: (rowA, rowB) => {
-    return (
-      rowA.original.last_action.timestamp -
-      rowB.original.last_action.timestamp
-    );
+    return rowA.original.last_action.timestamp - rowB.original.last_action.timestamp;
   },
   cell: ({ row }) => {
     return <div>{row.original.last_action.relative}</div>;
@@ -395,12 +367,7 @@ export function useFactionColumns(): ColumnDef<FactionMember>[] {
 
   return useMemo(() => {
     if (isMobile) {
-      return [
-        onlineColumnMobile,
-        nameColumn,
-        statusColumnMobile,
-        actionsColumnMobile,
-      ];
+      return [onlineColumnMobile, nameColumn, statusColumnMobile, actionsColumnMobile];
     }
 
     return [

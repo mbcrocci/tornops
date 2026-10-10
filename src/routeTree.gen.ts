@@ -9,19 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as OnlineActivityRouteImport } from './routes/online-activity'
-import { Route as ChainWatcherRouteImport } from './routes/chain-watcher'
-import { Route as AttackHistoryRouteImport } from './routes/attack-history'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AttackHistoryRouteImport } from './routes/attack-history'
+import { Route as ChainWatcherRouteImport } from './routes/chain-watcher'
+import { Route as OnlineActivityRouteImport } from './routes/online-activity'
 
-const OnlineActivityRoute = OnlineActivityRouteImport.update({
-  id: '/online-activity',
-  path: '/online-activity',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ChainWatcherRoute = ChainWatcherRouteImport.update({
-  id: '/chain-watcher',
-  path: '/chain-watcher',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AttackHistoryRoute = AttackHistoryRouteImport.update({
@@ -29,9 +24,14 @@ const AttackHistoryRoute = AttackHistoryRouteImport.update({
   path: '/attack-history',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const ChainWatcherRoute = ChainWatcherRouteImport.update({
+  id: '/chain-watcher',
+  path: '/chain-watcher',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnlineActivityRoute = OnlineActivityRouteImport.update({
+  id: '/online-activity',
+  path: '/online-activity',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -60,11 +60,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/attack-history' | '/chain-watcher' | '/online-activity'
   id:
-    | '__root__'
-    | '/'
-    | '/attack-history'
-    | '/chain-watcher'
-    | '/online-activity'
+    '__root__' | '/' | '/attack-history' | '/chain-watcher' | '/online-activity'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -76,18 +72,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/online-activity': {
-      id: '/online-activity'
-      path: '/online-activity'
-      fullPath: '/online-activity'
-      preLoaderRoute: typeof OnlineActivityRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/chain-watcher': {
-      id: '/chain-watcher'
-      path: '/chain-watcher'
-      fullPath: '/chain-watcher'
-      preLoaderRoute: typeof ChainWatcherRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/attack-history': {
@@ -97,11 +86,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AttackHistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/chain-watcher': {
+      id: '/chain-watcher'
+      path: '/chain-watcher'
+      fullPath: '/chain-watcher'
+      preLoaderRoute: typeof ChainWatcherRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/online-activity': {
+      id: '/online-activity'
+      path: '/online-activity'
+      fullPath: '/online-activity'
+      preLoaderRoute: typeof OnlineActivityRouteImport
       parentRoute: typeof rootRouteImport
     }
   }

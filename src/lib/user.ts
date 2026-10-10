@@ -29,9 +29,9 @@ export type User = {
   competition: Competition;
   cooldowns: Cooldowns;
   energy: Energy;
-  nerve:  Energy;
-  happy:  Energy;
-  chain:  Chain;
+  nerve: Energy;
+  happy: Energy;
+  chain: Chain;
 };
 
 export type Basicicons = {
@@ -105,21 +105,21 @@ export type Status = {
 };
 
 export type Chain = {
-  id:       number;
-  current:  number;
-  max:      number;
-  timeout:  number;
+  id: number;
+  current: number;
+  max: number;
+  timeout: number;
   modifier: number;
   cooldown: number;
-  start:    number;
-  end:      number;
-}
+  start: number;
+  end: number;
+};
 
 export type Energy = {
-  current:   number;
-  maximum:   number;
+  current: number;
+  maximum: number;
   increment: number;
-  interval:  number;
+  interval: number;
   tick_time: number;
   full_time: number;
-}
+};

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { rankedWarsFromCache } from "@/hooks/use-torn";
 import type { FactionAttack } from "@/lib/faction";
 import { analyzeAttacks } from "./attack-history";

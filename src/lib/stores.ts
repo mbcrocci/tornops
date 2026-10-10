@@ -32,16 +32,14 @@ export const useCredentialsStore = create<CredentialsState>()(
           ffscouterKey: ffscouterKey || undefined,
           isFFScouterKeyValid: ffscouterKey ? isValid : undefined,
         }),
-      setTornKeyValidation: (isValid: boolean) =>
-        set({ isTornKeyValid: isValid }),
-      setFFScouterKeyValidation: (isValid: boolean) =>
-        set({ isFFScouterKeyValid: isValid }),
+      setTornKeyValidation: (isValid: boolean) => set({ isTornKeyValid: isValid }),
+      setFFScouterKeyValidation: (isValid: boolean) => set({ isFFScouterKeyValid: isValid }),
     }),
     {
       name: "tornops-credentials",
       storage: createJSONStorage(() => localStorage),
-    }
-  )
+    },
+  ),
 );
 
 export type MemberWithId = Member & {
@@ -125,12 +123,9 @@ export const useGlobalStore = create<GlobalState>()(
       setEnemyFaction: (enemyFaction?: EnemyFaction) => set({ enemyFaction }),
       setUserFaction: (userFaction?: UserFaction) => set({ userFaction }),
       setFilters: (filters: FilterState) => set({ filters }),
-      setEnemyMembers: (members: EnemyMember[]) =>
-        set({ enemyMembers: members }),
-      setUserMembers: (members: UserMember[]) =>
-        set({ userMembers: members }),
-      setLastRefreshTime: (timestamp: number) =>
-        set({ lastRefreshTime: timestamp }),
+      setEnemyMembers: (members: EnemyMember[]) => set({ enemyMembers: members }),
+      setUserMembers: (members: UserMember[]) => set({ userMembers: members }),
+      setLastRefreshTime: (timestamp: number) => set({ lastRefreshTime: timestamp }),
       setCollapsedCards: (collapsedCards: boolean) => set({ collapsedCards }),
       addChainAttackActivity: (activity: ObservedChainActivity[]) =>
         set((state) => ({
@@ -141,6 +136,6 @@ export const useGlobalStore = create<GlobalState>()(
     {
       name: "tornops-monitor",
       storage: createJSONStorage(() => localStorage),
-    }
-  )
+    },
+  ),
 );

@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it } from "vitest";
+// @vitest-environment jsdom
+import { beforeEach, describe, expect, it } from "vite-plus/test";
 import { createJSONStorage } from "zustand/middleware";
 import type { EnemyMember, ObservedChainActivity } from "@/lib/stores";
 import { useGlobalStore } from "@/lib/stores";
@@ -48,9 +49,9 @@ describe("prioritizeTargets", () => {
   });
 
   it("includes targets at the fair fight limit", () => {
-    expect(prioritizeTargets([member(1, 3.5), member(2, 3.51)], 45, 0).map(({ id }) => id)).toEqual([
-      1,
-    ]);
+    expect(prioritizeTargets([member(1, 3.5), member(2, 3.51)], 45, 0).map(({ id }) => id)).toEqual(
+      [1],
+    );
   });
 
   it("does not suggest targets after the chain expires", () => {

@@ -18,11 +18,7 @@ import {
   useUserFactionData,
 } from "@/hooks/use-torn";
 import { playerAttackLink, playerProfileLink } from "@/lib/links";
-import {
-  type EnemyMember,
-  type ObservedChainActivity,
-  useGlobalStore,
-} from "@/lib/stores";
+import { type EnemyMember, type ObservedChainActivity, useGlobalStore } from "@/lib/stores";
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -81,10 +77,7 @@ export function prioritizeTargets(
 
   return members
     .flatMap((member): PrioritizedTarget[] => {
-      if (
-        member.ffs?.fair_fight !== undefined &&
-        member.ffs.fair_fight > MAX_VIABLE_FAIR_FIGHT
-      ) {
+      if (member.ffs?.fair_fight !== undefined && member.ffs.fair_fight > MAX_VIABLE_FAIR_FIGHT) {
         return [];
       }
 
@@ -164,9 +157,7 @@ const chainUrgencyStyles: Record<
 };
 
 function ChainStatusCard() {
-  const { data, isPending, isError } = useUserFactionChain(
-    CHAIN_WATCHER_REFETCH_INTERVAL,
-  );
+  const { data, isPending, isError } = useUserFactionChain(CHAIN_WATCHER_REFETCH_INTERVAL);
   const { data: user } = useUserData(CHAIN_WATCHER_REFETCH_INTERVAL);
   const chain = data?.chain;
   const remaining = useCountdown(chain?.timeout);
@@ -286,10 +277,7 @@ function LatestChainAttacks() {
     data: chainReport,
     dataUpdatedAt,
     isPending: isReportPending,
-  } = useFactionChainReport(
-    hasActiveChain && isMonitoring,
-    CHAIN_WATCHER_REFETCH_INTERVAL,
-  );
+  } = useFactionChainReport(hasActiveChain && isMonitoring, CHAIN_WATCHER_REFETCH_INTERVAL);
   const { data: factionData } = useUserFactionData();
   const previousReport = useRef<{ chainId: number; totals: Map<number, number> } | undefined>(
     undefined,
@@ -342,13 +330,7 @@ function LatestChainAttacks() {
     if (changes.length > 0) {
       addChainAttackActivity(changes);
     }
-  }, [
-    addChainAttackActivity,
-    chain,
-    chainReport,
-    clearChainAttackActivity,
-    dataUpdatedAt,
-  ]);
+  }, [addChainAttackActivity, chain, chainReport, clearChainAttackActivity, dataUpdatedAt]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {

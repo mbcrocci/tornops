@@ -121,7 +121,7 @@ export function CredentialsInput() {
       }
     };
 
-    validateStoredCredentials();
+    void validateStoredCredentials();
   }, [
     publicKey,
     ffscouterKey,

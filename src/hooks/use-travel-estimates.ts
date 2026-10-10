@@ -9,13 +9,14 @@ export const useTravelObservations = create<{
   observe: (members: MemberWithId[], observedAt: number) => void;
 }>((set) => ({
   observations: {},
-  observe: (members, observedAt) => set((state) => {
-    const observations = { ...state.observations };
-    for (const member of members) {
-      observations[member.id] = observeTravel(observations[member.id], member.status, observedAt);
-    }
-    return { observations };
-  }),
+  observe: (members, observedAt) =>
+    set((state) => {
+      const observations = { ...state.observations };
+      for (const member of members) {
+        observations[member.id] = observeTravel(observations[member.id], member.status, observedAt);
+      }
+      return { observations };
+    }),
 }));
 
 export function useObserveTravel(members: MemberWithId[], observedAt: number) {

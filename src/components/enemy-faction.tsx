@@ -12,12 +12,7 @@ import { Filters } from "./enemy-faction/filters";
 import { RefreshCountdown } from "./refresh-countdown";
 import { Button } from "./ui/button";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "./ui/empty";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupInput,
-} from "./ui/input-group";
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "./ui/input-group";
 import { Label } from "./ui/label";
 
 // Filtering function
@@ -27,7 +22,7 @@ function filterMembers(
     onlineStatus: string[];
     state: string[];
     ff: string[];
-  }
+  },
 ): EnemyMember[] {
   return members.filter((member) => {
     // Filter by online status
@@ -77,9 +72,7 @@ function filterMembers(
 
 export function EnemyFactionEmptyState() {
   const setEnemyFactionId = useGlobalStore((state) => state.setEnemyFactionId);
-  const [enemyFactionIdInput, setEnemyFactionIdInput] = useState<
-    number | undefined
-  >(undefined);
+  const [enemyFactionIdInput, setEnemyFactionIdInput] = useState<number | undefined>(undefined);
   const publicKey = useCredentialsStore((state) => state.publicKey ?? "");
   const {
     mutate: checkWars,
@@ -94,8 +87,7 @@ export function EnemyFactionEmptyState() {
       <EmptyHeader className="min-w-lg">
         <EmptyTitle>No enemy faction</EmptyTitle>
         <EmptyDescription>
-          Enter an enemy faction ID to monitor their members and chain
-          activity.
+          Enter an enemy faction ID to monitor their members and chain activity.
         </EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
@@ -113,9 +105,7 @@ export function EnemyFactionEmptyState() {
               }}
             />
             <InputGroupAddon align="inline-end">
-              <InputGroupButton
-                onClick={() => setEnemyFactionId(enemyFactionIdInput)}
-              >
+              <InputGroupButton onClick={() => setEnemyFactionId(enemyFactionIdInput)}>
                 Save
               </InputGroupButton>
             </InputGroupAddon>
@@ -180,9 +170,7 @@ export function EnemyFactionTable() {
   };
 
   if (!enemyMembers.length) {
-    return (
-      <EnemyFactionEmptyState />
-    );
+    return <EnemyFactionEmptyState />;
   }
 
   return (
@@ -207,11 +195,7 @@ export function EnemyFactionTable() {
         </div>
         <Filters filters={filters} onFiltersChange={setFilters} />
       </div>
-      <DataTable
-        columns={columns}
-        data={filteredMembers}
-        getRowId={(row) => String(row.id)}
-      />
+      <DataTable columns={columns} data={filteredMembers} getRowId={(row) => String(row.id)} />
     </div>
   );
 }

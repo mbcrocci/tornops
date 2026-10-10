@@ -209,9 +209,12 @@
   --sidebar-accent-foreground: oklch(0.4335 0.0754 182.2315);
   --sidebar-border: oklch(0.9436 0.0051 228.8204);
   --sidebar-ring: oklch(0.761 0.2015 149.7403);
-  --app-font-sans: "Segoe UI", "Helvetica Neue", Helvetica, "Lucida Grande", Arial, Ubuntu, Cantarell, "Fira Sans", sans-serif;
+  --app-font-sans:
+    "Segoe UI", "Helvetica Neue", Helvetica, "Lucida Grande", Arial, Ubuntu, Cantarell, "Fira Sans",
+    sans-serif;
   --app-font-serif: Georgia, serif;
-  --app-font-mono: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --app-font-mono:
+    SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --radius: 1rem;
   --shadow-x: 0px;
   --shadow-y: 2px;
@@ -264,9 +267,12 @@
   --sidebar-accent-foreground: oklch(0.6509 0.1283 170.4258);
   --sidebar-border: oklch(0.3351 0.0253 234.8586);
   --sidebar-ring: oklch(0.6509 0.1283 170.4258);
-  --app-font-sans: "Segoe UI", "Helvetica Neue", Helvetica, "Lucida Grande", Arial, Ubuntu, Cantarell, "Fira Sans", sans-serif;
+  --app-font-sans:
+    "Segoe UI", "Helvetica Neue", Helvetica, "Lucida Grande", Arial, Ubuntu, Cantarell, "Fira Sans",
+    sans-serif;
   --app-font-serif: Georgia, serif;
-  --app-font-mono: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --app-font-mono:
+    SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --radius: 1rem;
   --shadow-x: 0px;
   --shadow-y: 4px;

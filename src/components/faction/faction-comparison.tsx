@@ -85,9 +85,7 @@ function EnemyFactionContent() {
   const setFilters = useGlobalStore((state) => state.setFilters);
   const enemyMembers = useGlobalStore((state) => state.enemyMembers);
   const enemyFaction = useGlobalStore((state) => state.enemyFaction);
-  const setLastRefreshTime = useGlobalStore(
-    (state) => state.setLastRefreshTime,
-  );
+  const setLastRefreshTime = useGlobalStore((state) => state.setLastRefreshTime);
 
   // Apply filters
   const filteredMembers = filterMembers(enemyMembers, filters);
@@ -124,11 +122,7 @@ function EnemyFactionContent() {
         </div>
         <Filters filters={filters} onFiltersChange={setFilters} />
       </div>
-      <DataTable
-        columns={columns}
-        data={filteredMembers}
-        getRowId={(row) => String(row.id)}
-      />
+      <DataTable columns={columns} data={filteredMembers} getRowId={(row) => String(row.id)} />
     </div>
   );
 }
@@ -147,9 +141,7 @@ function UserFactionContent() {
   const setFilters = useGlobalStore((state) => state.setFilters);
   const userMembers = useGlobalStore((state) => state.userMembers);
   const userFaction = useGlobalStore((state) => state.userFaction);
-  const setLastRefreshTime = useGlobalStore(
-    (state) => state.setLastRefreshTime,
-  );
+  const setLastRefreshTime = useGlobalStore((state) => state.setLastRefreshTime);
 
   // Apply filters
   const filteredMembers = filterMembers(userMembers, filters);
@@ -166,8 +158,7 @@ function UserFactionContent() {
         <EmptyHeader className="min-w-lg">
           <EmptyTitle>No faction data</EmptyTitle>
           <EmptyDescription>
-            Unable to load your faction data. Please check your API key and try
-            again.
+            Unable to load your faction data. Please check your API key and try again.
           </EmptyDescription>
         </EmptyHeader>
       </Empty>
@@ -188,19 +179,15 @@ function UserFactionContent() {
           </Button>
           <div>
             <h2 className="text-sm font-bold">
-              {userFaction?.tag} - {userFaction?.name} [{userFaction?.id}] (
-              {userFaction?.capacity} members)
+              {userFaction?.tag} - {userFaction?.name} [{userFaction?.id}] ({userFaction?.capacity}{" "}
+              members)
             </h2>
             <RefreshCountdown />
           </div>
         </div>
         <Filters filters={filters} onFiltersChange={setFilters} />
       </div>
-      <DataTable
-        columns={columns}
-        data={filteredMembers}
-        getRowId={(row) => String(row.id)}
-      />
+      <DataTable columns={columns} data={filteredMembers} getRowId={(row) => String(row.id)} />
     </div>
   );
 }

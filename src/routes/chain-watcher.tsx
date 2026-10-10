@@ -13,9 +13,7 @@ function ChainWatcherPage() {
   if (!publicKey || isTornKeyValid === false) {
     return (
       <div className="container mx-auto flex h-screen flex-col items-center justify-center gap-4 p-2">
-        <CredentialsCard
-          showErrors={isTornKeyValid === false || isFFScouterKeyValid === false}
-        />
+        <CredentialsCard showErrors={isTornKeyValid === false || isFFScouterKeyValid === false} />
       </div>
     );
   }

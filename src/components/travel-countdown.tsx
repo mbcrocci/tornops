@@ -13,13 +13,23 @@ export function TravelCountdown({ id, status }: { id: number; status: StatusClas
     return () => clearInterval(interval);
   }, [status.state, estimate]);
   if (status.state !== "Traveling") return null;
-  if (!estimate) return <span className="block text-xs font-normal" title="Departure was not observed, or destination is unknown.">ETA unknown</span>;
+  if (!estimate)
+    return (
+      <span
+        className="block text-xs font-normal"
+        title="Departure was not observed, or destination is unknown."
+      >
+        ETA unknown
+      </span>
+    );
   const seconds = Math.max(0, Math.ceil((estimate.arrivalAt - now) / 1000));
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const duration = `${hours ? `${hours}h ` : ""}${minutes}m ${seconds % 60}s`;
   const title = `Estimated arrival: ${new Date(estimate.arrivalAt).toLocaleTimeString()}. Departure occurred between status updates; arrival window ${new Date(estimate.earliestArrival).toLocaleTimeString()}–${new Date(estimate.latestArrival).toLocaleTimeString()}. ${estimate.method}${estimate.assumedMethod ? " (assumed)" : ""}. Travel perks may change this estimate.`;
-  return <span className="block text-xs font-normal tabular-nums" title={title}>
-    {seconds > 0 ? `ETA ≈ ${duration}` : "Arrival due (est.)"}
-  </span>;
+  return (
+    <span className="block text-xs font-normal tabular-nums" title={title}>
+      {seconds > 0 ? `ETA ≈ ${duration}` : "Arrival due (est.)"}
+    </span>
+  );
 }

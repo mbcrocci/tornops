@@ -18,9 +18,7 @@ export type EnemyFactionMember = Member & {
 
 export const columns: ColumnDef<EnemyFactionMember>[] = [
   {
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Online" />
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Online" />,
     accessorKey: "online",
     enableSorting: true,
     sortingFn: (rowA, rowB) => {
@@ -55,27 +53,19 @@ export const columns: ColumnDef<EnemyFactionMember>[] = [
     },
   },
   {
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Name" />
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
     accessorKey: "name",
     enableSorting: true,
     cell: ({ row }) => {
       return (
-        <a
-          href={playerProfileLink(row.original.id)}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <a href={playerProfileLink(row.original.id)} target="_blank" rel="noopener noreferrer">
           {row.original.name}
         </a>
       );
     },
   },
   {
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Level" />
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Level" />,
     accessorKey: "level",
     enableSorting: true,
     cell: ({ row }) => {
@@ -83,9 +73,7 @@ export const columns: ColumnDef<EnemyFactionMember>[] = [
     },
   },
   {
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Status" />
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     accessorKey: "status",
     enableSorting: true,
     sortingFn: (rowA, rowB) => {
@@ -123,20 +111,16 @@ export const columns: ColumnDef<EnemyFactionMember>[] = [
       return (
         <div
           className={`${getStatusBgColorClass(
-            member.status.state
+            member.status.state,
           )} text-white font-semibold px-3 py-2 rounded-md  text-center shadow-sm`}
         >
           {member.status.state === "Hospital" && member.status.until > 0 ? (
             <span>
-              {cleanStatusDescription(member.status.description) ||
-                member.status.state}
+              {cleanStatusDescription(member.status.description) || member.status.state}
               <HospitalCountdown until={member.status.until} />
             </span>
           ) : (
-            <span>
-              {cleanStatusDescription(member.status.description) ||
-                member.status.state}
-            </span>
+            <span>{cleanStatusDescription(member.status.description) || member.status.state}</span>
           )}
           <TravelCountdown id={member.id} status={member.status} />
         </div>
@@ -144,9 +128,7 @@ export const columns: ColumnDef<EnemyFactionMember>[] = [
     },
   },
   {
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="FF" />
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="FF" />,
     accessorKey: "ff",
     enableSorting: true,
     sortingFn: (rowA, rowB) => {
@@ -177,9 +159,7 @@ export const columns: ColumnDef<EnemyFactionMember>[] = [
     },
   },
   {
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Battle Stats" />
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Battle Stats" />,
     accessorKey: "battle_stats",
     enableSorting: true,
     sortingFn: (rowA, rowB) => {
@@ -202,16 +182,11 @@ export const columns: ColumnDef<EnemyFactionMember>[] = [
     },
   },
   {
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Last Action" />
-    ),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Last Action" />,
     accessorKey: "last_action",
     enableSorting: true,
     sortingFn: (rowA, rowB) => {
-      return (
-        rowA.original.last_action.timestamp -
-        rowB.original.last_action.timestamp
-      );
+      return rowA.original.last_action.timestamp - rowB.original.last_action.timestamp;
     },
     cell: ({ row }) => {
       return <div>{row.original.last_action.relative}</div>;
@@ -235,7 +210,9 @@ export const columns: ColumnDef<EnemyFactionMember>[] = [
                 {row.getIsSelected() ? <PinOff /> : <Pin />}
               </Button>
             </TooltipTrigger>
-            <TooltipContent>{row.getIsSelected() ? "Unpin member" : "Pin member to top"}</TooltipContent>
+            <TooltipContent>
+              {row.getIsSelected() ? "Unpin member" : "Pin member to top"}
+            </TooltipContent>
           </Tooltip>
           <Tooltip delayDuration={750}>
             <TooltipTrigger asChild>

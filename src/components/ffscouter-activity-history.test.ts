@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type { FFScouterActivityBucket } from "@/hooks/use-ffscouter";
 import { analyzeFactionActivity, analyzeMemberActivity } from "./ffscouter-activity-history";
 

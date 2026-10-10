@@ -50,13 +50,16 @@ export function observeTravel(
   if (status.state !== "Traveling") return observation;
 
   const returning = /returning|traveling to torn/i.test(status.description);
-  const destination = destinationIn(status) ??
-    (returning && previous ? destinationIn(previous.status) ?? previous.estimate?.destination : undefined);
+  const destination =
+    destinationIn(status) ??
+    (returning && previous
+      ? (destinationIn(previous.status) ?? previous.estimate?.destination)
+      : undefined);
   if (!destination) return observation;
 
   const methods = ["Standard", "Airstrip", "Private", "Business"];
-  const methodIndex = methods.findIndex((method) =>
-    method.toLowerCase() === status.travel_type?.toLowerCase(),
+  const methodIndex = methods.findIndex(
+    (method) => method.toLowerCase() === status.travel_type?.toLowerCase(),
   );
   const method = methods[methodIndex < 0 ? 1 : methodIndex];
   const duration = travelTimes[destination][methodIndex < 0 ? 1 : methodIndex] * 60_000;
@@ -69,8 +72,10 @@ export function observeTravel(
         method,
         assumedMethod: methodIndex < 0,
         arrivalAt: estimate.departedAt + duration,
-        earliestArrival: estimate.departedAt - (estimate.latestArrival - estimate.earliestArrival) / 2 + duration,
-        latestArrival: estimate.departedAt + (estimate.latestArrival - estimate.earliestArrival) / 2 + duration,
+        earliestArrival:
+          estimate.departedAt - (estimate.latestArrival - estimate.earliestArrival) / 2 + duration,
+        latestArrival:
+          estimate.departedAt + (estimate.latestArrival - estimate.earliestArrival) / 2 + duration,
       };
     }
     return observation;

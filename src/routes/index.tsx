@@ -10,8 +10,7 @@ export const Route = createFileRoute("/")({
 });
 
 function App() {
-  const { publicKey, isTornKeyValid, isFFScouterKeyValid } =
-    useCredentialsStore();
+  const { publicKey, isTornKeyValid, isFFScouterKeyValid } = useCredentialsStore();
 
   // Show credentials card if no key or Torn key is invalid
   const shouldShowCredentials = !publicKey || isTornKeyValid === false;
@@ -19,9 +18,7 @@ function App() {
   if (shouldShowCredentials) {
     return (
       <div className="container mx-auto p-2 flex flex-col gap-4 items-center justify-center h-screen">
-        <CredentialsCard
-          showErrors={isTornKeyValid === false || isFFScouterKeyValid === false}
-        />
+        <CredentialsCard showErrors={isTornKeyValid === false || isFFScouterKeyValid === false} />
       </div>
     );
   }
