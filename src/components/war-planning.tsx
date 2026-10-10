@@ -483,10 +483,11 @@ function DataQuality({
           <summary className="cursor-pointer">How this data is gathered</summary>
           <p className="mt-1">
             FFScouter activity history is unavailable ({activityError}). Instead TornOps saves who
-            is online whenever the war room or this page refreshes both factions: one snapshot a
-            minute, kept for 30 days in this browser only. Opening TornOps at different times of day
-            fills the grey hours fastest. With FFScouter Premium you get 28 days of every hour
-            immediately.
+            is online whenever the war room, chain watcher or this page refreshes both factions: one
+            snapshot a minute, kept for 30 days in this browser only. This keeps working in a
+            background tab, but not when the browser is closed or the computer sleeps. Leaving a
+            TornOps tab open fills the grey hours fastest. With FFScouter Premium you get 28 days of
+            every hour immediately.
           </p>
         </details>
       )}

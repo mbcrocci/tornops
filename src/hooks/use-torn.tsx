@@ -380,6 +380,17 @@ const getEnemyFactionChain = async (enemyFactionId: number, key: string) => {
   return response.json() as Promise<{ chain: FactionChain }>;
 };
 
+// Faction requests double as presence recording, so they keep running in hidden tabs.
+// Once a minute is enough there: presence is saved at most once per minute anyway.
+const BACKGROUND_REFETCH_INTERVAL = 60_000;
+const factionPolling = (interval: number) => ({
+  refetchInterval: () =>
+    typeof document !== "undefined" && document.hidden
+      ? Math.max(interval, BACKGROUND_REFETCH_INTERVAL)
+      : interval,
+  refetchIntervalInBackground: true,
+});
+
 export const useUserData = (refetchIntervalOverride?: number) => {
   const key = useCredentialsStore((state) => state.publicKey ?? "");
   const refetchInterval = useGlobalStore((state) => state.refetchInterval);
@@ -410,7 +421,7 @@ export const useUserFaction = () => {
 
       return data;
     },
-    refetchInterval: refetchInterval,
+    ...factionPolling(refetchInterval),
   });
 };
 
@@ -444,7 +455,7 @@ export const useEnemyFactionData = (refetchIntervalOverride?: number) => {
   return useQuery({
     queryKey: ["enemy-faction-data", enemyFactionId],
     queryFn: () => getEnemyFactionData(enemyFactionId, publicKey),
-    refetchInterval: refetchIntervalOverride ?? refetchInterval,
+    ...factionPolling(refetchIntervalOverride ?? refetchInterval),
   });
 };
 
@@ -609,7 +620,7 @@ export const useUserFactionData = (enabled = true) => {
     queryKey: ["user-faction-data", key],
     queryFn: () => getUserFactionData(key),
     enabled: Boolean(key && enabled),
-    refetchInterval: refetchInterval,
+    ...factionPolling(refetchInterval),
   });
 };
 
