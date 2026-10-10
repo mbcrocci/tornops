@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { useCredentialsStore, useGlobalStore } from "@/lib/stores";
-import { withTimeout } from "@/lib/utils";
+import { useCredentialsStore } from "@/lib/stores";
+import { FFSCOUTER_STATS_TTL, getCachedFFScouterData } from "@/lib/ffscouter-cache";
 
 export type FFScouterData = {
   player_id: number;
@@ -83,37 +83,17 @@ const getActivity = async (
   return data as FFScouterActivityResponse;
 };
 
-const getFFScouterData = async (key: string, targets: number[]) => {
-  const url = "https://ffscouter.com/api/v1/get-stats";
-  const params = new URLSearchParams();
-  params.set("key", key);
-  params.set("targets", targets.join(","));
-
-  const response = await fetch(`${url}?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error(`FFScouter request failed with status ${response.status}`);
-  }
-
-  const data: unknown = await response.json();
-  if (!Array.isArray(data)) {
-    throw new Error("FFScouter returned an invalid response");
-  }
-
-  return data as FFScouterData[];
-};
-
 export const useFFScouterData = (targets: number[]) => {
-  const refetchInterval = useGlobalStore((state) => state.refetchInterval);
   const ffScouterKey = useCredentialsStore((state) => state.ffscouterKey ?? "");
+  const ids = [...new Set(targets)].sort((a, b) => a - b);
   return useQuery({
-    queryKey: ["ffscouter-data", ffScouterKey, targets],
-    queryFn: () => {
-      if (!ffScouterKey || targets.length === 0) return [];
-
-      return withTimeout(getFFScouterData(ffScouterKey, targets));
-    },
-    enabled: Boolean(ffScouterKey) && targets.length > 0,
-    refetchInterval: refetchInterval,
+    queryKey: ["ffscouter-data", ffScouterKey, ids],
+    queryFn: () => getCachedFFScouterData(ffScouterKey, ids),
+    enabled: Boolean(ffScouterKey) && ids.length > 0,
+    staleTime: FFSCOUTER_STATS_TTL,
+    gcTime: FFSCOUTER_STATS_TTL,
+    refetchInterval: false,
+    retry: false,
   });
 };
 
