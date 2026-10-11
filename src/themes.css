@@ -1,4 +1,6 @@
 :root {
+  --app-font-weight-normal: 400;
+  --app-font-weight-medium: 500;
   color-scheme: light;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -288,4 +290,82 @@
   --app-shadow-lg: 0px 4px 12px 0px hsl(0 0% 0% / 0.4), 0px 4px 6px -1px hsl(0 0% 0% / 0.4);
   --app-shadow-xl: 0px 4px 12px 0px hsl(0 0% 0% / 0.4), 0px 8px 10px -1px hsl(0 0% 0% / 0.4);
   --app-shadow-2xl: 0px 4px 12px 0px hsl(0 0% 0% / 1);
+}
+
+/* Source: https://manager.shadcndesign.com/s/GaESIZEP8JOrHJNE9W2aKw/overview
+ * Extracted from the public preview. Component-specific edits are not theme tokens.
+ */
+:root[data-theme="gold-skeumorphic"] {
+  --radius: 0.625rem;
+  --spacing: 0.25rem;
+  --app-font-weight-normal: 350;
+  --app-font-weight-medium: 450;
+  --app-font-sans: "Public Sans Variable", sans-serif;
+  --app-font-mono: "Geist Mono Variable", monospace;
+  --app-font-serif: Georgia, serif;
+  --background: oklch(0.985 0 0);
+  --foreground: oklch(0.2 0 0);
+  --card: oklch(0.985 0 0);
+  --card-foreground: oklch(0.2 0 0);
+  --popover: oklch(0.99 0 0);
+  --popover-foreground: oklch(0.2 0 0);
+  --primary: oklch(0.7767 0.1369 80.762);
+  --primary-foreground: oklch(0.24 0.035 70);
+  --secondary: oklch(0.955 0 0);
+  --secondary-foreground: oklch(0.2 0 0);
+  --muted: oklch(0.935 0 0);
+  --muted-foreground: oklch(0.5 0 0);
+  --accent: oklch(0.925 0 0);
+  --accent-foreground: oklch(0.2 0 0);
+  --destructive: oklch(0.5 0.2 27);
+  --border: oklch(0.86 0 0);
+  --input: oklch(0.84 0 0);
+  --ring: oklch(0.74 0.12 75);
+  --chart-1: oklch(0.83 0.15 87);
+  --chart-2: oklch(0.76 0.135 75);
+  --chart-3: oklch(0.68 0.13 68);
+  --chart-4: oklch(0.59 0.115 62);
+  --chart-5: oklch(0.5 0.095 58);
+  --sidebar: oklch(0.975 0 0);
+  --sidebar-foreground: oklch(0.2 0 0);
+  --sidebar-primary: oklch(0.76 0.135 75);
+  --sidebar-primary-foreground: oklch(0.24 0.035 70);
+  --sidebar-accent: oklch(0.935 0 0);
+  --sidebar-accent-foreground: oklch(0.2 0 0);
+  --sidebar-border: oklch(0.86 0 0);
+  --sidebar-ring: oklch(0.74 0.12 75);
+}
+
+:root[data-theme="gold-skeumorphic"].dark {
+  --background: oklch(0.2603 0 0);
+  --foreground: oklch(0.9249 0 0);
+  --card: oklch(0.3062 0.0014 17.235);
+  --card-foreground: oklch(0.9249 0 0);
+  --popover: oklch(0.3012 0 0);
+  --popover-foreground: oklch(0.9249 0 0);
+  --primary: oklch(0.7202 0.1524 65.686);
+  --primary-foreground: oklch(0.2009 0.0258 68.208);
+  --secondary: oklch(0.3407 0 0);
+  --secondary-foreground: oklch(0.9249 0 0);
+  --muted: oklch(0.2572 0.0015 17.254);
+  --muted-foreground: oklch(0.7155 0 0);
+  --accent: oklch(0.3867 0 0);
+  --accent-foreground: oklch(0.9702 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(0.2002 0 0);
+  --input: oklch(0.1684 0 0);
+  --ring: oklch(0.6877 0.1117 70.854);
+  --chart-1: oklch(0.88 0.13 92);
+  --chart-2: oklch(0.81 0.145 82);
+  --chart-3: oklch(0.74 0.15 72);
+  --chart-4: oklch(0.66 0.14 64);
+  --chart-5: oklch(0.57 0.12 58);
+  --sidebar: oklch(0.2891 0 0);
+  --sidebar-foreground: oklch(0.9249 0 0);
+  --sidebar-primary: oklch(0.4748 0 0);
+  --sidebar-primary-foreground: oklch(0.9702 0 0);
+  --sidebar-accent: oklch(0.3407 0 0);
+  --sidebar-accent-foreground: oklch(0.9249 0 0);
+  --sidebar-border: oklch(0.2002 0 0);
+  --sidebar-ring: oklch(0.6334 0 0);
 }

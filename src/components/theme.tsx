@@ -12,6 +12,7 @@ export const THEME_PRESETS = [
   { id: "default", label: "Default" },
   { id: "astrovista", label: "AstroVista" },
   { id: "whatsapp", label: "WhatsApp" },
+  { id: "gold-skeumorphic", label: "Gold Skeumorphic" },
 ] as const;
 
 export type ThemeMode = "dark" | "light" | "system";

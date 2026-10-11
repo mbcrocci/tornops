@@ -5,6 +5,8 @@
 @import "@fontsource-variable/outfit";
 @import "@fontsource-variable/merriweather";
 @import "@fontsource-variable/fira-code";
+@import "@fontsource-variable/public-sans";
+@import "@fontsource-variable/geist-mono";
 @import "./themes.css";
 
 @custom-variant dark (&:is(.dark *));
@@ -13,6 +15,8 @@
   --font-sans: var(--app-font-sans);
   --font-serif: var(--app-font-serif);
   --font-mono: var(--app-font-mono);
+  --font-weight-normal: var(--app-font-weight-normal);
+  --font-weight-medium: var(--app-font-weight-medium);
   --shadow-2xs: var(--app-shadow-2xs);
   --shadow-xs: var(--app-shadow-xs);
   --shadow-sm: var(--app-shadow-sm);
