@@ -178,7 +178,7 @@ export function MemberTable({ members }: { members: MemberSummary[] }) {
                 label="Energy"
                 sortKey="energy"
                 align="right"
-                title={`${ENERGY_PER_ATTACK} energy per attack, including assists and failed attacks`}
+                title={`${ENERGY_PER_ATTACK} energy per attack, including assists and failed attacks, less what Revitalize procs gave back`}
                 {...sortProps}
               />
               <SortHeader
@@ -251,6 +251,14 @@ export function MemberTable({ members }: { members: MemberSummary[] }) {
                   <td className="px-3 py-2.5 text-right font-mono tabular-nums">
                     {member.energy.toLocaleString()}
                     <span className="ml-1 text-[10px] text-muted-foreground">E</span>
+                    {member.revitalizeProcs > 0 && (
+                      <div
+                        className="text-[10px] text-emerald-600 dark:text-emerald-400"
+                        title={`${member.revitalizeProcs * ENERGY_PER_ATTACK} energy given back by Revitalize`}
+                      >
+                        {member.revitalizeProcs} revitalize
+                      </div>
+                    )}
                   </td>
                   <td className="px-3 py-2.5 text-right font-mono tabular-nums">
                     {member.hits - member.bonusHits > 0 ? formatRespect(member.respectPerHit) : "–"}

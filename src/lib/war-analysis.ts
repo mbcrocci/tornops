@@ -14,6 +14,12 @@ const CHAIN_BONUS_HITS = new Set([
 ]);
 // Starting or joining an attack costs the same energy, whatever the result.
 export const ENERGY_PER_ATTACK = 25;
+
+// A Revitalize proc on the finishing hit gives back the energy the attack cost.
+export const revitalizeProcs = (attacks: FactionAttack[]) =>
+  attacks.filter((attack) =>
+    attack.finishing_hit_effects?.some((effect) => effect.name.toLowerCase() === "revitalize"),
+  ).length;
 const FAILED_RESULTS = new Set(["Lost", "Stalemate", "Escape", "Timeout", "Interrupted"]);
 
 export type WarRange = { from: number; to: number };
@@ -99,6 +105,7 @@ export type MemberSummary = {
   respectPerHit: number;
   fairFight: number | null;
   energy: number;
+  revitalizeProcs: number;
   bonuses: MemberBonuses;
   hitsTaken: number;
   respectLost: number;
@@ -511,7 +518,8 @@ export function analyzeWar({
         bonusRespect: totals.bonusRespect,
         respectPerHit: totals.respectPerHit,
         fairFight: totals.fairFight,
-        energy: totals.attacks * ENERGY_PER_ATTACK,
+        energy: (totals.attacks - revitalizeProcs(summary.outgoing)) * ENERGY_PER_ATTACK,
+        revitalizeProcs: revitalizeProcs(summary.outgoing),
         bonuses: summarizeBonuses(summary.outgoing),
         hitsTaken: summary.hitsTaken,
         respectLost: summary.respectLost,

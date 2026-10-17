@@ -117,6 +117,8 @@ export type FactionAttack = {
   is_raid: boolean;
   is_ranked_war: boolean;
   is_territory_war: boolean;
+  // Weapon bonuses that procced on the finishing hit. Older cached records may lack it.
+  finishing_hit_effects?: { name: string; value: number }[];
   // Present on v2 attack responses. Older cached records may lack it.
   modifiers?: {
     fair_fight?: number;
