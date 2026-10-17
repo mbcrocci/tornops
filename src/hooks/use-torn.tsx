@@ -166,87 +166,94 @@ const getFactionAttackHistory = async (
   signal?: AbortSignal,
   forceRefresh = false,
 ): Promise<FactionAttackHistory> => {
-  const attacks = new Map<number, FactionAttack>();
+  const attacks = {
+    outgoing: new Map<number, FactionAttack>(),
+    incoming: new Map<number, FactionAttack>(),
+  };
   const cacheScope = await attackCacheScope(key);
   let hasRequested = false;
 
   for (const range of ranges) {
-    if (signal?.aborted) throw new DOMException("Request cancelled", "AbortError");
-    const cached = forceRefresh ? null : await readCachedWar(cacheScope, range);
-    if (signal?.aborted) throw new DOMException("Request cancelled", "AbortError");
-    if (cached !== null) {
-      for (const attack of cached) attacks.set(attack.id, attack);
-      continue;
-    }
-
-    let nextUrl: string | null = null;
-    let rateLimitRetries = 0;
-    const completedUrls = new Set<string>();
-    const warAttacks = new Map<number, FactionAttack>();
-
-    do {
-      if (hasRequested) await waitFor(1_000, signal);
-      hasRequested = true;
-
-      const url = new URL(nextUrl ?? "https://api.torn.com/v2/faction/attacks");
-      if (!nextUrl) {
-        url.searchParams.set("filters", "outgoing");
-        url.searchParams.set("from", range.from.toString());
-        url.searchParams.set("limit", "100");
-        url.searchParams.set("sort", "ASC");
-      }
-      // Torn's pagination links omit the original upper bound.
-      url.searchParams.set("to", range.to.toString());
-      const requestUrl = url.toString();
-      if (completedUrls.has(requestUrl)) {
-        break;
-      }
-
-      const response = await fetch(url, {
-        headers: { Authorization: `ApiKey ${key}` },
-        signal,
-      });
-      const data: unknown = await response.json();
-      const apiError = isRecord(data) && isRecord(data.error) ? data.error : null;
-      const message = apiError?.error;
-      const code = typeof apiError?.code === "number" ? apiError.code : undefined;
-
-      if ((response.status === 429 || code === 5) && rateLimitRetries < 3) {
-        rateLimitRetries += 1;
-        await waitFor(65_000, signal);
+    for (const direction of ["outgoing", "incoming"] as const) {
+      if (signal?.aborted) throw new DOMException("Request cancelled", "AbortError");
+      const cached = forceRefresh ? null : await readCachedWar(cacheScope, range, direction);
+      if (signal?.aborted) throw new DOMException("Request cancelled", "AbortError");
+      if (cached !== null) {
+        for (const attack of cached) attacks[direction].set(attack.id, attack);
         continue;
       }
-      if (!response.ok) {
-        throw new Error(`Torn API request failed (${response.status})`);
-      }
-      if (apiError) {
-        throw new TornApiError(
-          typeof message === "string" ? message : "Torn API returned an error",
-          code,
-        );
-      }
-      if (!isRecord(data) || !Array.isArray(data.attacks)) {
-        throw new Error("Torn API returned incomplete attack data");
-      }
 
-      rateLimitRetries = 0;
-      completedUrls.add(requestUrl);
-      for (const attack of data.attacks as FactionAttack[]) {
-        if (attack.is_ranked_war) warAttacks.set(attack.id, attack);
-      }
+      let nextUrl: string | null = null;
+      let rateLimitRetries = 0;
+      const completedUrls = new Set<string>();
+      const warAttacks = new Map<number, FactionAttack>();
 
-      const metadata = isRecord(data._metadata) ? data._metadata : null;
-      const links = metadata && isRecord(metadata.links) ? metadata.links : null;
-      nextUrl = links && typeof links.next === "string" ? links.next : null;
-    } while (nextUrl);
-    if (signal?.aborted) throw new DOMException("Request cancelled", "AbortError");
-    const completedAttacks = [...warAttacks.values()];
-    for (const attack of completedAttacks) attacks.set(attack.id, attack);
-    await writeCachedWar(cacheScope, range, completedAttacks);
+      do {
+        if (hasRequested) await waitFor(1_000, signal);
+        hasRequested = true;
+
+        const url = new URL(nextUrl ?? "https://api.torn.com/v2/faction/attacks");
+        if (!nextUrl) {
+          url.searchParams.set("filters", direction);
+          url.searchParams.set("from", range.from.toString());
+          url.searchParams.set("limit", "100");
+          url.searchParams.set("sort", "ASC");
+        }
+        // Torn's pagination links omit the original upper bound.
+        url.searchParams.set("to", range.to.toString());
+        const requestUrl = url.toString();
+        if (completedUrls.has(requestUrl)) {
+          break;
+        }
+
+        const response = await fetch(url, {
+          headers: { Authorization: `ApiKey ${key}` },
+          signal,
+        });
+        const data: unknown = await response.json();
+        const apiError = isRecord(data) && isRecord(data.error) ? data.error : null;
+        const message = apiError?.error;
+        const code = typeof apiError?.code === "number" ? apiError.code : undefined;
+
+        if ((response.status === 429 || code === 5) && rateLimitRetries < 3) {
+          rateLimitRetries += 1;
+          await waitFor(65_000, signal);
+          continue;
+        }
+        if (!response.ok) {
+          throw new Error(`Torn API request failed (${response.status})`);
+        }
+        if (apiError) {
+          throw new TornApiError(
+            typeof message === "string" ? message : "Torn API returned an error",
+            code,
+          );
+        }
+        if (!isRecord(data) || !Array.isArray(data.attacks)) {
+          throw new Error("Torn API returned incomplete attack data");
+        }
+
+        rateLimitRetries = 0;
+        completedUrls.add(requestUrl);
+        for (const attack of data.attacks as FactionAttack[]) {
+          if (attack.is_ranked_war) warAttacks.set(attack.id, attack);
+        }
+
+        const metadata = isRecord(data._metadata) ? data._metadata : null;
+        const links = metadata && isRecord(metadata.links) ? metadata.links : null;
+        nextUrl = links && typeof links.next === "string" ? links.next : null;
+      } while (nextUrl);
+      if (signal?.aborted) throw new DOMException("Request cancelled", "AbortError");
+      const completedAttacks = [...warAttacks.values()];
+      for (const attack of completedAttacks) attacks[direction].set(attack.id, attack);
+      await writeCachedWar(cacheScope, range, completedAttacks, direction);
+    }
   }
 
+  const byTime = (a: FactionAttack, b: FactionAttack) => a.ended - b.ended;
   return {
-    attacks: [...attacks.values()].sort((a, b) => a.ended - b.ended),
+    attacks: [...attacks.outgoing.values()].sort(byTime),
+    incoming: [...attacks.incoming.values()].sort(byTime),
   };
 };
 
@@ -280,18 +287,7 @@ type RankedWarsResult = {
   source: "cache" | "network";
 };
 
-const getFactionRankedWars = async (
-  key: string,
-  forceRefresh = false,
-): Promise<RankedWarsResult> => {
-  if (!forceRefresh) {
-    const cacheScope = await attackCacheScope(key);
-    const cachedWars = await readCachedWars(cacheScope);
-    if (cachedWars.length > 0) {
-      return { wars: rankedWarsFromCache(cachedWars), source: "cache" };
-    }
-  }
-
+const fetchFactionRankedWars = async (key: string): Promise<FactionRankedWar[]> => {
   const url = new URL("https://api.torn.com/v2/faction/rankedwars");
   url.searchParams.set("limit", "100");
 
@@ -314,8 +310,27 @@ const getFactionRankedWars = async (
     throw new Error("Torn API returned incomplete ranked war data");
   }
 
+  return data.rankedwars as FactionRankedWar[];
+};
+
+// Torn is asked first so newly finished wars show up. The cache stands in when the request
+// fails, and keeps wars that have fallen off the end of Torn's list.
+const getFactionRankedWars = async (key: string): Promise<RankedWarsResult> => {
+  const cachedWars = rankedWarsFromCache(await readCachedWars(await attackCacheScope(key)));
+  let networkWars: FactionRankedWar[];
+  try {
+    networkWars = await fetchFactionRankedWars(key);
+  } catch (error) {
+    if (cachedWars.length === 0) throw error;
+    return { wars: cachedWars, source: "cache" };
+  }
+
+  const networkIds = new Set(networkWars.map((war) => war.id));
   return {
-    wars: (data.rankedwars as FactionRankedWar[]).sort((a, b) => b.end - a.end),
+    wars: [...networkWars, ...cachedWars.filter((war) => !networkIds.has(war.id))]
+      // A war still in progress has no end yet, so it has no complete attack history.
+      .filter((war) => war.end > 0)
+      .sort((a, b) => b.end - a.end),
     source: "network",
   };
 };
@@ -526,27 +541,14 @@ export const useFactionAttackHistory = (ranges: WarAttackRange[]) => {
 
 export const useFactionRankedWars = () => {
   const key = useCredentialsStore((state) => state.publicKey ?? "");
-  const bypassCache = useRef(false);
 
-  const query = useQuery({
+  return useQuery({
     queryKey: ["faction-ranked-wars", key],
-    queryFn: () => {
-      const forceRefresh = bypassCache.current;
-      bypassCache.current = false;
-      return getFactionRankedWars(key, forceRefresh);
-    },
+    queryFn: () => getFactionRankedWars(key),
     enabled: Boolean(key),
     staleTime: 5 * 60_000,
     retry: false,
   });
-
-  return {
-    ...query,
-    refetchFresh: () => {
-      bypassCache.current = true;
-      return query.refetch();
-    },
-  };
 };
 
 export const useEnemyFactionChain = () => {

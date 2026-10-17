@@ -90,16 +90,17 @@ export function getCachedFFScouterData(key: string, targets: number[]): Promise<
         throw new Error(`FFScouter request failed with status ${response.status}`);
       }
       const data: unknown = await withTimeout(response.json());
-      if (
-        !Array.isArray(data) ||
-        !data.every((item) => isEntry({ fetchedAt: Date.now(), data: item }) && item !== null)
-      ) {
+      if (!Array.isArray(data)) {
         throw new Error("FFScouter returned an invalid response");
       }
       const fetchedAt = Date.now();
       // Remember missing estimates too, so unknown players don't trigger repeated calls.
       for (const id of missing) session.cache.set(id, { fetchedAt, data: null });
-      for (const item of data as FFScouterData[]) {
+      // Players FFScouter has no estimate for come back with null stats; they stay unknown.
+      const estimates = (data as (FFScouterData | null)[]).filter(
+        (item): item is FFScouterData => item !== null && isEntry({ fetchedAt, data: item }),
+      );
+      for (const item of estimates) {
         if (missing.includes(item.player_id)) {
           session.cache.set(item.player_id, { fetchedAt, data: item });
         }

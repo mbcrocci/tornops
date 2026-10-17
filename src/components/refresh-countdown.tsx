@@ -12,9 +12,15 @@ function formatTimeRemaining(ms: number): string {
   return `${remainingSeconds}s`;
 }
 
-export function RefreshCountdown() {
-  const lastRefreshTime = useGlobalStore((state) => state.lastRefreshTime);
-  const refetchInterval = useGlobalStore((state) => state.refetchInterval);
+export function RefreshCountdown(props: {
+  lastRefreshTime?: number;
+  refetchInterval?: number;
+  label?: string;
+}) {
+  const globalLastRefreshTime = useGlobalStore((state) => state.lastRefreshTime);
+  const globalRefetchInterval = useGlobalStore((state) => state.refetchInterval);
+  const lastRefreshTime = props.lastRefreshTime ?? globalLastRefreshTime;
+  const refetchInterval = props.refetchInterval ?? globalRefetchInterval;
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
 
   useEffect(() => {
@@ -50,7 +56,7 @@ export function RefreshCountdown() {
 
   return (
     <p className="text-xs text-muted-foreground">
-      Next refresh in {formatTimeRemaining(timeRemaining)}
+      {props.label ?? "Next refresh"} in {formatTimeRemaining(timeRemaining)}
     </p>
   );
 }

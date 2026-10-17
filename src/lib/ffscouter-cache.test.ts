@@ -41,6 +41,16 @@ describe("FFScouter stats cache", () => {
     expect(new URL(fetch.mock.calls[1][0]).searchParams.get("targets")).toBe("3");
   });
 
+  it("keeps the batch when some players have no estimate", async () => {
+    const unknown = { ...stats(2), fair_fight: null, bs_estimate: null, bs_estimate_human: null };
+    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify([stats(1), unknown])));
+    vi.stubGlobal("fetch", fetch);
+    const { getCachedFFScouterData } = await client();
+    expect(await getCachedFFScouterData("key", [1, 2])).toEqual([stats(1)]);
+    await getCachedFFScouterData("key", [2]);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
   it("deduplicates overlapping batches in flight", async () => {
     const fetch = vi
       .fn()

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Activity, Radio, Swords } from "lucide-react";
+import { Activity, Crosshair, Radio, Swords } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserData } from "@/hooks/use-torn";
 import { useCredentialsStore } from "@/lib/stores";
@@ -10,6 +10,7 @@ const links = [
   { to: "/chain-watcher", label: "Chain watcher", icon: Activity },
   { to: "/war-planning", label: "War planning", icon: Radio },
   { to: "/attack-history", label: "Faction attack history", icon: Swords },
+  { to: "/bounties", label: "Bounties", icon: Crosshair },
 ] as const;
 
 function UserIdentification() {

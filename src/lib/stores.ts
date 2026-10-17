@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type { FilterState } from "@/components/enemy-faction/filters";
 import type { FFScouterData } from "@/hooks/use-ffscouter";
+import type { BountyFilters } from "@/lib/bounties";
 import type { Member } from "@/lib/faction";
 
 interface CredentialsState {
@@ -37,6 +38,31 @@ export const useCredentialsStore = create<CredentialsState>()(
     }),
     {
       name: "tornops-credentials",
+      storage: createJSONStorage(() => localStorage),
+    },
+  ),
+);
+
+export const DEFAULT_BOUNTY_REFRESH_INTERVAL = 60_000;
+
+interface BountyState extends BountyFilters {
+  refreshInterval: number;
+  setFilters: (filters: Partial<BountyFilters>) => void;
+  setRefreshInterval: (refreshInterval: number) => void;
+}
+
+export const useBountyStore = create<BountyState>()(
+  persist(
+    (set) => ({
+      maxLevel: undefined,
+      maxFF: undefined,
+      onlyAvailable: false,
+      refreshInterval: DEFAULT_BOUNTY_REFRESH_INTERVAL,
+      setFilters: (filters: Partial<BountyFilters>) => set(filters),
+      setRefreshInterval: (refreshInterval: number) => set({ refreshInterval }),
+    }),
+    {
+      name: "tornops-bounties",
       storage: createJSONStorage(() => localStorage),
     },
   ),

@@ -117,10 +117,21 @@ export type FactionAttack = {
   is_raid: boolean;
   is_ranked_war: boolean;
   is_territory_war: boolean;
+  // Present on v2 attack responses. Older cached records may lack it.
+  modifiers?: {
+    fair_fight?: number;
+    war?: number;
+    retaliation?: number;
+    group?: number;
+    overseas?: number;
+    chain?: number;
+    warlord?: number;
+  };
 };
 
 export type FactionAttackHistory = {
   attacks: FactionAttack[];
+  incoming: FactionAttack[];
 };
 
 export type FactionRankedWarParticipant = {

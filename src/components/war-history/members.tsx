@@ -1,0 +1,293 @@
+import { ArrowDown, Search, UserCheck, UserX } from "lucide-react";
+import { useState } from "react";
+import type { AbsentMember, MemberSummary } from "@/lib/war-analysis";
+import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Input } from "../ui/input";
+import { formatPercent, formatRespect, formatWindow } from "./format";
+
+type SortKey = "reliability" | "hits" | "failed" | "respectPerHit" | "respect" | "hitsTaken";
+
+const SORTERS: Record<SortKey, (member: MemberSummary) => number> = {
+  reliability: (member) => member.reliableWindow?.confidence ?? 0,
+  hits: (member) => member.hits,
+  failed: (member) => (member.attacks ? member.failed / member.attacks : 0),
+  respectPerHit: (member) => member.respectPerHit,
+  respect: (member) => member.respect,
+  hitsTaken: (member) => member.hitsTaken,
+};
+
+function ProfileLink({ id, name }: { id: number; name: string }) {
+  return (
+    <a
+      className="font-medium hover:text-primary hover:underline"
+      href={`https://www.torn.com/profiles.php?XID=${id}`}
+      target="_blank"
+      rel="noreferrer"
+    >
+      {name}
+    </a>
+  );
+}
+
+function SortHeader({
+  label,
+  sortKey,
+  active,
+  onSort,
+  align = "left",
+  title,
+}: {
+  label: string;
+  sortKey: SortKey;
+  active: SortKey;
+  onSort: (key: SortKey) => void;
+  align?: "left" | "right";
+  title?: string;
+}) {
+  return (
+    <th
+      className={cn("px-3 py-2 font-medium", align === "right" && "text-right")}
+      aria-sort={active === sortKey ? "descending" : undefined}
+    >
+      <button
+        type="button"
+        title={title}
+        onClick={() => onSort(sortKey)}
+        className={cn(
+          "inline-flex items-center gap-1 hover:text-foreground",
+          active === sortKey && "text-foreground",
+        )}
+      >
+        {label}
+        {active === sortKey && <ArrowDown className="size-3" />}
+      </button>
+    </th>
+  );
+}
+
+export function MemberTable({ members }: { members: MemberSummary[] }) {
+  const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("reliability");
+  const showFairFight = members.some((member) => member.fairFight !== null);
+  const query = search.trim().toLowerCase();
+  const rows = members
+    .filter((member) => member.attacks > 0 && member.name.toLowerCase().includes(query))
+    .sort((a, b) => SORTERS[sortKey](b) - SORTERS[sortKey](a) || b.hits - a.hits);
+  const sortProps = { active: sortKey, onSort: setSortKey };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <UserCheck className="size-4 text-primary" /> Who can I count on?
+            </CardTitle>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Each member's most dependable three-hour window, and how well they hit
+            </p>
+          </div>
+          <label className="relative block">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="w-full pl-8 sm:w-60"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Find a member"
+            />
+          </label>
+        </div>
+      </CardHeader>
+      <CardContent className="overflow-x-auto px-0">
+        <table className="w-full min-w-[960px] text-sm">
+          <thead className="border-y bg-muted/35 text-left text-xs text-muted-foreground">
+            <tr>
+              <th className="px-4 py-2 font-medium">Member</th>
+              <th className="px-3 py-2 font-medium">Best window</th>
+              <SortHeader
+                label="Reliability"
+                sortKey="reliability"
+                title="A cautious estimate that rewards being seen on many days, not one lucky day"
+                {...sortProps}
+              />
+              <SortHeader label="Hits" sortKey="hits" {...sortProps} />
+              <SortHeader label="Wasted" sortKey="failed" {...sortProps} />
+              <SortHeader
+                label="Respect / hit"
+                sortKey="respectPerHit"
+                align="right"
+                title="Chain bonus hits excluded"
+                {...sortProps}
+              />
+              {showFairFight && <th className="px-3 py-2 text-right font-medium">Fair fight</th>}
+              <SortHeader label="Respect" sortKey="respect" align="right" {...sortProps} />
+              <SortHeader label="Hits taken" sortKey="hitsTaken" align="right" {...sortProps} />
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {rows.map((member) => {
+              const window = member.reliableWindow;
+              return (
+                <tr key={member.id} className="hover:bg-muted/25">
+                  <td className="px-4 py-2.5">
+                    <ProfileLink id={member.id} name={member.name} />
+                    <span className="ml-2 font-mono text-[10px] text-muted-foreground">
+                      {member.id}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2.5 font-mono text-xs font-medium">
+                    {window ? formatWindow(window.startHour) : "–"}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    {window ? (
+                      <div className="flex items-center gap-2">
+                        <div className="h-1.5 w-16 bg-muted">
+                          <div
+                            className={cn(
+                              "h-full",
+                              window.confidence >= 0.6
+                                ? "bg-primary"
+                                : window.confidence >= 0.3
+                                  ? "bg-primary/60"
+                                  : "bg-muted-foreground/50",
+                            )}
+                            style={{ width: `${window.confidence * 100}%` }}
+                          />
+                        </div>
+                        <span className="font-mono text-xs tabular-nums">
+                          {formatPercent(window.confidence)}
+                        </span>
+                        <span className="font-mono text-[10px] text-muted-foreground">
+                          {window.daysSeen}/{window.sampledDays} days
+                        </span>
+                      </div>
+                    ) : (
+                      "–"
+                    )}
+                  </td>
+                  <td className="px-3 py-2.5 font-mono tabular-nums">
+                    {member.hits}
+                    <span className="ml-1 text-[10px] text-muted-foreground">
+                      / {member.attacks}
+                    </span>
+                  </td>
+                  <td
+                    className={cn(
+                      "px-3 py-2.5 font-mono tabular-nums",
+                      member.failed === 0 && "text-muted-foreground",
+                    )}
+                  >
+                    {member.failed}
+                  </td>
+                  <td className="px-3 py-2.5 text-right font-mono tabular-nums">
+                    {member.hits - member.bonusHits > 0 ? formatRespect(member.respectPerHit) : "–"}
+                  </td>
+                  {showFairFight && (
+                    <td className="px-3 py-2.5 text-right font-mono tabular-nums">
+                      {member.fairFight === null ? "–" : `${member.fairFight.toFixed(2)}×`}
+                    </td>
+                  )}
+                  <td className="px-3 py-2.5 text-right font-mono tabular-nums">
+                    {formatRespect(member.respect)}
+                    {member.bonusHits > 0 && (
+                      <span
+                        className="ml-1 text-[10px] text-muted-foreground"
+                        title={`${formatRespect(member.bonusRespect)} from chain bonus hits`}
+                      >
+                        +bonus
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2.5 text-right font-mono tabular-nums">
+                    {member.hitsTaken}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {rows.length === 0 && (
+          <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+            No member matches that search.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+const JOINED_LABELS: Record<AbsentMember["joined"], string> = {
+  before: "In the faction for every selected war",
+  during: "Joined while the selected wars were running",
+  after: "Joined after the selected wars",
+};
+
+export function AbsentMembers({
+  absent,
+  rosterAvailable,
+}: {
+  absent: AbsentMember[];
+  rosterAvailable: boolean;
+}) {
+  const groups = (["before", "during", "after"] as const)
+    .map((joined) => ({ joined, members: absent.filter((member) => member.joined === joined) }))
+    .filter((group) => group.members.length > 0);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <UserX className="size-4 text-destructive" /> No successful war hits
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Current members without a single scoring hit in the selected wars. Join dates are
+          estimated from days in faction.
+        </p>
+      </CardHeader>
+      <CardContent>
+        {!rosterAvailable ? (
+          <p className="text-sm text-muted-foreground">
+            The faction roster could not be loaded, so members without hits can't be listed.
+          </p>
+        ) : groups.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Every current member landed a hit.</p>
+        ) : (
+          <div className="space-y-5">
+            {groups.map((group) => (
+              <section key={group.joined}>
+                <h3
+                  className={cn(
+                    "mb-2 text-xs font-medium",
+                    group.joined === "before" ? "text-foreground" : "text-muted-foreground",
+                  )}
+                >
+                  {JOINED_LABELS[group.joined]} · {group.members.length}
+                </h3>
+                <div className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2 lg:grid-cols-3">
+                  {group.members.map((member) => (
+                    <div
+                      key={member.id}
+                      className="flex items-baseline justify-between gap-3 border-b border-dashed py-1 text-sm"
+                    >
+                      <span className="min-w-0 truncate">
+                        <ProfileLink id={member.id} name={member.name} />
+                        <span className="ml-2 text-[10px] text-muted-foreground">
+                          {member.position}
+                        </span>
+                      </span>
+                      <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                        {member.hitsTaken > 0 && `hit ${member.hitsTaken}× · `}
+                        {member.daysInFaction}d in faction
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
