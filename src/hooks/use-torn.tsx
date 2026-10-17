@@ -160,6 +160,11 @@ const getChainAttacks = async (
   return { attacks: [], scope: "monitor" };
 };
 
+// A range ending at 0 is a war still in progress. Its attacks stay in memory instead of the
+// browser cache, and each refresh only asks Torn for attacks since the last one seen.
+const LIVE_WAR_OVERLAP_SECONDS = 5 * 60;
+const liveWarAttacks = new Map<string, FactionAttack[]>();
+
 const getFactionAttackHistory = async (
   key: string,
   ranges: WarAttackRange[],
@@ -176,7 +181,10 @@ const getFactionAttackHistory = async (
   for (const range of ranges) {
     for (const direction of ["outgoing", "incoming"] as const) {
       if (signal?.aborted) throw new DOMException("Request cancelled", "AbortError");
-      const cached = forceRefresh ? null : await readCachedWar(cacheScope, range, direction);
+      const isLive = range.to === 0;
+      const liveKey = `${cacheScope ?? key}:${direction}:${range.id}:${range.from}`;
+      const cached =
+        forceRefresh || isLive ? null : await readCachedWar(cacheScope, range, direction);
       if (signal?.aborted) throw new DOMException("Request cancelled", "AbortError");
       if (cached !== null) {
         for (const attack of cached) attacks[direction].set(attack.id, attack);
@@ -187,6 +195,14 @@ const getFactionAttackHistory = async (
       let rateLimitRetries = 0;
       const completedUrls = new Set<string>();
       const warAttacks = new Map<number, FactionAttack>();
+      let from = range.from;
+      if (isLive && !forceRefresh) {
+        for (const attack of liveWarAttacks.get(liveKey) ?? []) {
+          warAttacks.set(attack.id, attack);
+          // Overlap the last fetch so attacks that were still running then are picked up.
+          from = Math.max(from, attack.ended - LIVE_WAR_OVERLAP_SECONDS);
+        }
+      }
 
       do {
         if (hasRequested) await waitFor(1_000, signal);
@@ -195,12 +211,12 @@ const getFactionAttackHistory = async (
         const url = new URL(nextUrl ?? "https://api.torn.com/v2/faction/attacks");
         if (!nextUrl) {
           url.searchParams.set("filters", direction);
-          url.searchParams.set("from", range.from.toString());
+          url.searchParams.set("from", from.toString());
           url.searchParams.set("limit", "100");
           url.searchParams.set("sort", "ASC");
         }
         // Torn's pagination links omit the original upper bound.
-        url.searchParams.set("to", range.to.toString());
+        if (!isLive) url.searchParams.set("to", range.to.toString());
         const requestUrl = url.toString();
         if (completedUrls.has(requestUrl)) {
           break;
@@ -246,7 +262,8 @@ const getFactionAttackHistory = async (
       if (signal?.aborted) throw new DOMException("Request cancelled", "AbortError");
       const completedAttacks = [...warAttacks.values()];
       for (const attack of completedAttacks) attacks[direction].set(attack.id, attack);
-      await writeCachedWar(cacheScope, range, completedAttacks, direction);
+      if (isLive) liveWarAttacks.set(liveKey, completedAttacks);
+      else await writeCachedWar(cacheScope, range, completedAttacks, direction);
     }
   }
 
@@ -326,11 +343,13 @@ const getFactionRankedWars = async (key: string): Promise<RankedWarsResult> => {
   }
 
   const networkIds = new Set(networkWars.map((war) => war.id));
+  const now = Date.now() / 1000;
+  // A war in progress has an end of 0. It sorts first; one that has not started yet is left out.
+  const sortEnd = (war: FactionRankedWar) => (war.end === 0 ? Infinity : war.end);
   return {
     wars: [...networkWars, ...cachedWars.filter((war) => !networkIds.has(war.id))]
-      // A war still in progress has no end yet, so it has no complete attack history.
-      .filter((war) => war.end > 0)
-      .sort((a, b) => b.end - a.end),
+      .filter((war) => war.end > 0 || war.start <= now)
+      .sort((a, b) => sortEnd(b) - sortEnd(a)),
     source: "network",
   };
 };

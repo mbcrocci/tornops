@@ -66,7 +66,17 @@ export function warOpponent(war: FactionRankedWar, factionId: number | undefined
   return war.factions.find((faction) => faction.id !== factionId) ?? war.factions[1];
 }
 
+// Torn reports a war still in progress with an end of 0.
+export function isWarOngoing(war: FactionRankedWar) {
+  return war.end === 0;
+}
+
+export function warEnd(war: FactionRankedWar, now: number) {
+  return isWarOngoing(war) ? now : war.end;
+}
+
 export function warOutcome(war: FactionRankedWar, factionId: number | undefined) {
+  if (isWarOngoing(war)) return "Ongoing";
   if (!war.winner) return "Draw";
   return war.winner === factionId ? "Victory" : "Defeat";
 }

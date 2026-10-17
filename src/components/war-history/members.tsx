@@ -1,21 +1,82 @@
 import { ArrowDown, Search, UserCheck, UserX } from "lucide-react";
 import { useState } from "react";
-import type { AbsentMember, MemberSummary } from "@/lib/war-analysis";
+import {
+  type AbsentMember,
+  ENERGY_PER_ATTACK,
+  type MemberBonuses,
+  type MemberSummary,
+} from "@/lib/war-analysis";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { formatPercent, formatRespect, formatWindow } from "./format";
 
-type SortKey = "reliability" | "hits" | "failed" | "respectPerHit" | "respect" | "hitsTaken";
+type SortKey =
+  | "reliability"
+  | "hits"
+  | "failed"
+  | "energy"
+  | "respectPerHit"
+  | "respect"
+  | "hitsTaken";
 
 const SORTERS: Record<SortKey, (member: MemberSummary) => number> = {
   reliability: (member) => member.reliableWindow?.confidence ?? 0,
   hits: (member) => member.hits,
   failed: (member) => (member.attacks ? member.failed / member.attacks : 0),
+  energy: (member) => member.energy,
   respectPerHit: (member) => member.respectPerHit,
   respect: (member) => member.respect,
   hitsTaken: (member) => member.hitsTaken,
 };
+
+const hasBonuses = (bonuses: MemberBonuses) =>
+  bonuses.chainBonuses.length > 0 ||
+  bonuses.modifiers.length > 0 ||
+  (bonuses.averageChainMultiplier ?? 1) > 1;
+
+function BonusBreakdown({ bonuses }: { bonuses: MemberBonuses }) {
+  return (
+    <div className="grid gap-1.5 py-0.5 text-left font-mono">
+      {bonuses.chainBonuses.length > 0 && (
+        <div>
+          <div className="mb-0.5 text-[10px] uppercase tracking-wider opacity-70">
+            Chain bonus hits
+          </div>
+          {bonuses.chainBonuses.map((bonus) => (
+            <div key={bonus.chain} className="flex justify-between gap-4 tabular-nums">
+              <span>#{bonus.chain.toLocaleString()}</span>
+              <span>{formatRespect(bonus.respect)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {(bonuses.modifiers.length > 0 || (bonuses.averageChainMultiplier ?? 1) > 1) && (
+        <div>
+          <div className="mb-0.5 text-[10px] uppercase tracking-wider opacity-70">
+            Respect modifiers
+          </div>
+          {(bonuses.averageChainMultiplier ?? 1) > 1 && (
+            <div className="flex justify-between gap-4 tabular-nums">
+              <span>Chain</span>
+              <span>{bonuses.averageChainMultiplier?.toFixed(2)}× avg</span>
+            </div>
+          )}
+          {bonuses.modifiers.map((modifier) => (
+            <div key={modifier.key} className="flex justify-between gap-4 tabular-nums">
+              <span>{modifier.label}</span>
+              <span>
+                {modifier.hits} {modifier.hits === 1 ? "hit" : "hits"} ·{" "}
+                {modifier.averageMultiplier.toFixed(2)}×
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function ProfileLink({ id, name }: { id: number; name: string }) {
   return (
@@ -100,7 +161,7 @@ export function MemberTable({ members }: { members: MemberSummary[] }) {
         </div>
       </CardHeader>
       <CardContent className="overflow-x-auto px-0">
-        <table className="w-full min-w-[960px] text-sm">
+        <table className="w-full min-w-[1040px] text-sm">
           <thead className="border-y bg-muted/35 text-left text-xs text-muted-foreground">
             <tr>
               <th className="px-4 py-2 font-medium">Member</th>
@@ -113,6 +174,13 @@ export function MemberTable({ members }: { members: MemberSummary[] }) {
               />
               <SortHeader label="Hits" sortKey="hits" {...sortProps} />
               <SortHeader label="Wasted" sortKey="failed" {...sortProps} />
+              <SortHeader
+                label="Energy"
+                sortKey="energy"
+                align="right"
+                title={`${ENERGY_PER_ATTACK} energy per attack, including assists and failed attacks`}
+                {...sortProps}
+              />
               <SortHeader
                 label="Respect / hit"
                 sortKey="respectPerHit"
@@ -181,6 +249,10 @@ export function MemberTable({ members }: { members: MemberSummary[] }) {
                     {member.failed}
                   </td>
                   <td className="px-3 py-2.5 text-right font-mono tabular-nums">
+                    {member.energy.toLocaleString()}
+                    <span className="ml-1 text-[10px] text-muted-foreground">E</span>
+                  </td>
+                  <td className="px-3 py-2.5 text-right font-mono tabular-nums">
                     {member.hits - member.bonusHits > 0 ? formatRespect(member.respectPerHit) : "–"}
                   </td>
                   {showFairFight && (
@@ -189,14 +261,22 @@ export function MemberTable({ members }: { members: MemberSummary[] }) {
                     </td>
                   )}
                   <td className="px-3 py-2.5 text-right font-mono tabular-nums">
-                    {formatRespect(member.respect)}
-                    {member.bonusHits > 0 && (
-                      <span
-                        className="ml-1 text-[10px] text-muted-foreground"
-                        title={`${formatRespect(member.bonusRespect)} from chain bonus hits`}
-                      >
-                        +bonus
-                      </span>
+                    {hasBonuses(member.bonuses) ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-help underline decoration-dotted decoration-muted-foreground/60 underline-offset-4">
+                            {formatRespect(member.respect)}
+                            {member.bonusHits > 0 && (
+                              <span className="ml-1 text-[10px] text-muted-foreground">+bonus</span>
+                            )}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="left">
+                          <BonusBreakdown bonuses={member.bonuses} />
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      formatRespect(member.respect)
                     )}
                   </td>
                   <td className="px-4 py-2.5 text-right font-mono tabular-nums">

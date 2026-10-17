@@ -12,6 +12,8 @@ const QUARTER_HOUR_SECONDS = 15 * 60;
 const CHAIN_BONUS_HITS = new Set([
   10, 25, 50, 100, 250, 500, 1_000, 2_500, 5_000, 10_000, 25_000, 50_000, 100_000,
 ]);
+// Starting or joining an attack costs the same energy, whatever the result.
+export const ENERGY_PER_ATTACK = 25;
 const FAILED_RESULTS = new Set(["Lost", "Stalemate", "Escape", "Timeout", "Interrupted"]);
 
 export type WarRange = { from: number; to: number };
@@ -71,6 +73,19 @@ export type AttackTotals = {
   enemyAttackers: number;
 };
 
+export type ModifierBonus = {
+  key: "retaliation" | "overseas" | "group" | "warlord";
+  label: string;
+  hits: number;
+  averageMultiplier: number;
+};
+
+export type MemberBonuses = {
+  chainBonuses: { chain: number; respect: number }[];
+  modifiers: ModifierBonus[];
+  averageChainMultiplier: number | null;
+};
+
 export type MemberSummary = {
   id: number;
   name: string;
@@ -83,6 +98,8 @@ export type MemberSummary = {
   bonusRespect: number;
   respectPerHit: number;
   fairFight: number | null;
+  energy: number;
+  bonuses: MemberBonuses;
   hitsTaken: number;
   respectLost: number;
   lastAttack: number;
@@ -186,6 +203,47 @@ function averageFairFight(attacks: FactionAttack[]) {
     .filter((attack) => isHit(attack) && typeof attack.modifiers?.fair_fight === "number")
     .map((attack) => attack.modifiers?.fair_fight as number);
   return values.length ? average(values) : null;
+}
+
+const MODIFIER_LABELS: Record<ModifierBonus["key"], string> = {
+  retaliation: "Retaliation",
+  overseas: "Overseas",
+  group: "Group attack",
+  warlord: "Warlord",
+};
+
+// Torn reports each respect modifier as a multiplier, so anything above 1 was a bonus.
+// Older cached attacks have no modifiers and count as no bonus.
+export function summarizeBonuses(outgoing: FactionAttack[]): MemberBonuses {
+  const hits = outgoing.filter(isHit);
+  const modifiers = (Object.keys(MODIFIER_LABELS) as ModifierBonus["key"][]).flatMap((key) => {
+    const multipliers = hits
+      .map((attack) => attack.modifiers?.[key])
+      .filter((value): value is number => typeof value === "number" && value > 1);
+    return multipliers.length
+      ? [
+          {
+            key,
+            label: MODIFIER_LABELS[key],
+            hits: multipliers.length,
+            averageMultiplier: average(multipliers),
+          },
+        ]
+      : [];
+  });
+  const chainMultipliers = hits
+    .filter((attack) => !isBonusHit(attack))
+    .map((attack) => attack.modifiers?.chain)
+    .filter((value): value is number => typeof value === "number");
+
+  return {
+    chainBonuses: hits
+      .filter(isBonusHit)
+      .map((attack) => ({ chain: attack.chain as number, respect: attack.respect_gain }))
+      .sort((a, b) => a.chain - b.chain),
+    modifiers,
+    averageChainMultiplier: chainMultipliers.length ? average(chainMultipliers) : null,
+  };
 }
 
 export function summarizeAttacks(
@@ -453,6 +511,8 @@ export function analyzeWar({
         bonusRespect: totals.bonusRespect,
         respectPerHit: totals.respectPerHit,
         fairFight: totals.fairFight,
+        energy: totals.attacks * ENERGY_PER_ATTACK,
+        bonuses: summarizeBonuses(summary.outgoing),
         hitsTaken: summary.hitsTaken,
         respectLost: summary.respectLost,
         lastAttack: Math.max(0, ...summary.outgoing.map((attack) => attack.ended)),

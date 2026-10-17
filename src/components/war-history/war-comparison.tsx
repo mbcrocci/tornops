@@ -73,7 +73,9 @@ export function WarComparison({
                                 ? "text-emerald-600 dark:text-emerald-400"
                                 : outcome === "Defeat"
                                   ? "text-destructive"
-                                  : "text-muted-foreground",
+                                  : outcome === "Ongoing"
+                                    ? "text-primary"
+                                    : "text-muted-foreground",
                             )}
                           >
                             {outcome}

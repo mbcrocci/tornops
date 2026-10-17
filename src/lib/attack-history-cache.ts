@@ -1,6 +1,7 @@
 import { ATTACK_HISTORY_STORE as STORE_NAME, openDatabase, requestResult } from "@/lib/db";
 import type { FactionAttack } from "@/lib/faction";
 
+// `to` is 0 for a war still in progress: its attacks run up to now and are never cached.
 export type WarAttackRange = { id: number; from: number; to: number };
 
 export type AttackDirection = "outgoing" | "incoming";

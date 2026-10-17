@@ -34,7 +34,9 @@ import {
   formatRespect,
   formatSigned,
   formatWarDate,
+  isWarOngoing,
   timeZoneLabel,
+  warEnd,
   warOpponent,
   warOutcome,
 } from "./war-history/format";
@@ -97,11 +99,17 @@ export function AttackHistory() {
       selectedWars.map((war) => ({
         id: war.id,
         from: war.start,
-        to: war.end + 1,
+        to: isWarOngoing(war) ? 0 : war.end + 1,
       })),
     [selectedWars],
   );
   const attackQuery = useFactionAttackHistory(attackRanges);
+  // A war in progress is analysed up to when its attacks were last fetched.
+  const fetchedAt = Math.floor((attackQuery.dataUpdatedAt || Date.now()) / 1000);
+  const analysisRanges = useMemo(
+    () => attackRanges.map((range) => (range.to === 0 ? { ...range, to: fetchedAt } : range)),
+    [attackRanges, fetchedAt],
+  );
   const outgoing = useMemo(
     () => (attackQuery.data?.attacks ?? []).filter((attack) => attack.is_ranked_war),
     [attackQuery.data],
@@ -111,24 +119,24 @@ export function AttackHistory() {
     [attackQuery.data],
   );
   const analysis = useMemo(
-    () => analyzeWar({ outgoing, incoming, ranges: attackRanges, timeZone }),
-    [outgoing, incoming, attackRanges, timeZone],
+    () => analyzeWar({ outgoing, incoming, ranges: analysisRanges, timeZone }),
+    [outgoing, incoming, analysisRanges, timeZone],
   );
   const warRows = useMemo(
     () =>
       selectedWars.map((war) => {
         const inWar = (attack: { ended: number }) =>
-          attack.ended >= war.start && attack.ended <= war.end + 1;
+          attack.ended >= war.start && attack.ended <= warEnd(war, fetchedAt) + 1;
         return { war, totals: summarizeAttacks(outgoing.filter(inWar), incoming.filter(inWar)) };
       }),
-    [selectedWars, outgoing, incoming],
+    [selectedWars, outgoing, incoming, fetchedAt],
   );
 
   const ownFactionId =
     factionQuery.data?.ID ??
     outgoing.find((attack) => attack.attacker?.faction)?.attacker?.faction?.id;
   const selectionStart = Math.min(...selectedWars.map((war) => war.start));
-  const selectionEnd = Math.max(...selectedWars.map((war) => war.end));
+  const selectionEnd = Math.max(...selectedWars.map((war) => warEnd(war, fetchedAt)));
   const roster = useMemo<RosterMember[] | null>(
     () =>
       factionQuery.data?.members
@@ -159,7 +167,8 @@ export function AttackHistory() {
   const selectedWarIdsSet = new Set(selectedWars.map((war) => war.id));
   const wins = selectedWars.filter((war) => warOutcome(war, ownFactionId) === "Victory").length;
   const losses = selectedWars.filter((war) => warOutcome(war, ownFactionId) === "Defeat").length;
-  const draws = selectedWars.length - wins - losses;
+  const ongoing = selectedWars.filter(isWarOngoing).length;
+  const draws = selectedWars.length - wins - losses - ongoing;
   const hasWarResults = selectedWars.every((war) => war.target > 0);
   const firstSelectedWar = selectedWars[0];
   const firstOwnFaction = firstSelectedWar?.factions.find((faction) => faction.id === ownFactionId);
@@ -191,14 +200,14 @@ export function AttackHistory() {
             Faction attack history
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Combine one or more ranked wars. Only ranked-war attacks between your faction and the
-            opponent are counted, in both directions.
+            Combine one or more ranked wars, including one in progress. Only ranked-war attacks
+            between your faction and the opponent are counted, in both directions.
           </p>
         </div>
 
         <div className="grid gap-2 sm:grid-cols-[minmax(290px,1fr)_auto_auto] sm:items-end">
           <div className="grid gap-1 text-xs text-muted-foreground">
-            <span>Past ranked wars</span>
+            <span>Ranked wars</span>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -210,7 +219,7 @@ export function AttackHistory() {
                     {selectedWars.length === 0
                       ? "Choose wars"
                       : selectedWars.length === 1
-                        ? `${warOpponent(selectedWars[0], factionQuery.data?.ID)?.name ?? `War ${selectedWars[0].id}`} · ${formatWarDate(selectedWars[0].end, timeZone)}`
+                        ? `${warOpponent(selectedWars[0], factionQuery.data?.ID)?.name ?? `War ${selectedWars[0].id}`} · ${isWarOngoing(selectedWars[0]) ? "Ongoing" : formatWarDate(selectedWars[0].end, timeZone)}`
                         : `${selectedWars.length} wars selected`}
                   </span>
                   <ChevronDown className="size-4 text-muted-foreground" />
@@ -255,6 +264,9 @@ export function AttackHistory() {
                           </span>
                           <span className="block font-mono text-[10px] text-muted-foreground">
                             {formatWarDate(war.start, timeZone)} · #{war.id}
+                            {isWarOngoing(war) && (
+                              <span className="ml-1.5 uppercase text-primary">· Ongoing</span>
+                            )}
                           </span>
                         </span>
                         {war.target > 0 && (
@@ -322,8 +334,8 @@ export function AttackHistory() {
           </div>
         </div>
       ) : wars.length === 0 ? (
-        <Notice title="No completed ranked wars found">
-          Torn did not return any past wars for this faction.
+        <Notice title="No ranked wars found">
+          Torn did not return any ranked wars for this faction.
         </Notice>
       ) : (
         <div className="space-y-4">
@@ -340,7 +352,9 @@ export function AttackHistory() {
                   <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                     {selectedWars.length} ranked {selectedWars.length === 1 ? "war" : "wars"} ·{" "}
                     {formatWarDate(selectionStart, timeZone)} to{" "}
-                    {formatWarDate(selectionEnd, timeZone)}
+                    {selectedWars.some(isWarOngoing)
+                      ? "now"
+                      : formatWarDate(selectionEnd, timeZone)}
                   </p>
                   <h2 className="mt-2 font-serif text-2xl font-semibold sm:text-3xl">
                     {selectedWars.length === 1
@@ -375,6 +389,16 @@ export function AttackHistory() {
                           <div>
                             <div className="text-2xl font-semibold tabular-nums">{draws}</div>
                             <div className="text-[10px] uppercase text-muted-foreground">Draws</div>
+                          </div>
+                        )}
+                        {ongoing > 0 && (
+                          <div>
+                            <div className="text-2xl font-semibold tabular-nums text-primary">
+                              {ongoing}
+                            </div>
+                            <div className="text-[10px] uppercase text-muted-foreground">
+                              Ongoing
+                            </div>
                           </div>
                         )}
                       </div>
