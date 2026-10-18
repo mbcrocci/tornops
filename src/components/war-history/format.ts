@@ -58,6 +58,16 @@ export function formatSigned(value: number) {
   return `${value > 0 ? "+" : value < 0 ? "−" : ""}${formatRespect(Math.abs(value))}`;
 }
 
+export function formatDuration(seconds: number) {
+  const total = Math.round(seconds);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const rest = total % 60;
+  if (hours) return `${hours}h ${minutes.toString().padStart(2, "0")}m`;
+  if (minutes) return `${minutes}m ${rest.toString().padStart(2, "0")}s`;
+  return `${rest}s`;
+}
+
 export function formatPercent(value: number) {
   return `${Math.round(value * 100)}%`;
 }

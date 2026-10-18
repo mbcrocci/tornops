@@ -106,7 +106,7 @@ export type MemberSummary = {
   fairFight: number | null;
   energy: number;
   revitalizeProcs: number;
-  chainWatch: number | null;
+  chainWatch: MemberChainWatch | null;
   bonuses: MemberBonuses;
   hitsTaken: number;
   respectLost: number;
@@ -290,7 +290,18 @@ export function summarizeAttacks(
 // them were not ranked-war hits and were not loaded.
 const CHAIN_TIMEOUT_SECONDS = 5 * 60;
 
-export type ChainWatch = { seconds: Map<number, number>; chainSeconds: number };
+export type ChainWatch = {
+  seconds: Map<number, number>;
+  hits: Map<number, number>;
+  chainSeconds: number;
+};
+
+export type MemberChainWatch = {
+  share: number;
+  seconds: number;
+  hits: number;
+  chainSeconds: number;
+};
 
 // Credits each chain hit with the time since the previous chain hit. A member who keeps the
 // chain alive when the timer runs low earns a large share; the shares add up to 100%.
@@ -299,6 +310,7 @@ export function chainWatch(outgoing: FactionAttack[]): ChainWatch {
     .filter((attack) => isHit(attack) && attack.attacker && (attack.chain ?? 0) > 0)
     .sort((a, b) => a.ended - b.ended);
   const seconds = new Map<number, number>();
+  const hits = new Map<number, number>();
   let chainSeconds = 0;
   let previous: FactionAttack | null = null;
 
@@ -308,12 +320,13 @@ export function chainWatch(outgoing: FactionAttack[]): ChainWatch {
       const elapsed = Math.min(attack.ended - previous.ended, CHAIN_TIMEOUT_SECONDS);
       const id = (attack.attacker as NonNullable<FactionAttack["attacker"]>).id;
       seconds.set(id, (seconds.get(id) ?? 0) + elapsed);
+      hits.set(id, (hits.get(id) ?? 0) + 1);
       chainSeconds += elapsed;
     }
     previous = attack;
   }
 
-  return { seconds, chainSeconds };
+  return { seconds, hits, chainSeconds };
 }
 
 export function analyzeWar({
@@ -553,7 +566,12 @@ export function analyzeWar({
         energy: (totals.attacks - revitalizeProcs(summary.outgoing)) * ENERGY_PER_ATTACK,
         revitalizeProcs: revitalizeProcs(summary.outgoing),
         chainWatch: watch.chainSeconds
-          ? (watch.seconds.get(summary.id) ?? 0) / watch.chainSeconds
+          ? {
+              share: (watch.seconds.get(summary.id) ?? 0) / watch.chainSeconds,
+              seconds: watch.seconds.get(summary.id) ?? 0,
+              hits: watch.hits.get(summary.id) ?? 0,
+              chainSeconds: watch.chainSeconds,
+            }
           : null,
         bonuses: summarizeBonuses(summary.outgoing),
         hitsTaken: summary.hitsTaken,

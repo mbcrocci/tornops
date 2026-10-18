@@ -8,9 +8,10 @@ import {
 } from "@/lib/war-analysis";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import type { XanaxUse } from "@/lib/armory";
 import { Input } from "../ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
-import { formatPercent, formatRespect, formatWindow } from "./format";
+import { formatDuration, formatPercent, formatRespect, formatWindow } from "./format";
 
 type SortKey =
   | "reliability"
@@ -25,14 +26,14 @@ type SortKey =
 
 const SORTERS: Record<
   SortKey,
-  (member: MemberSummary, armoryXanax: Map<number, number> | undefined) => number
+  (member: MemberSummary, armoryXanax: Map<number, XanaxUse> | undefined) => number
 > = {
   reliability: (member) => member.reliableWindow?.confidence ?? 0,
   hits: (member) => member.hits,
   failed: (member) => (member.attacks ? member.failed / member.attacks : 0),
   energy: (member) => member.energy,
-  xanax: (member, armoryXanax) => armoryXanax?.get(member.id) ?? 0,
-  chainWatch: (member) => member.chainWatch ?? 0,
+  xanax: (member, armoryXanax) => armoryXanax?.get(member.id)?.total ?? 0,
+  chainWatch: (member) => member.chainWatch?.share ?? 0,
   respectPerHit: (member) => member.respectPerHit,
   respect: (member) => member.respect,
   hitsTaken: (member) => member.hitsTaken,
@@ -140,7 +141,7 @@ export function MemberTable({
   armoryXanaxError,
 }: {
   members: MemberSummary[];
-  armoryXanax?: Map<number, number>;
+  armoryXanax?: Map<number, XanaxUse>;
   armoryXanaxError?: boolean;
 }) {
   const [search, setSearch] = useState("");
@@ -205,24 +206,24 @@ export function MemberTable({
                 {...sortProps}
               />
               <SortHeader
-                label="Respect / hit"
-                sortKey="respectPerHit"
-                align="right"
-                title="Chain bonus hits excluded"
-                {...sortProps}
-              />
-              <SortHeader
                 label="Chain watch"
                 sortKey="chainWatch"
                 align="right"
-                title="Sum over their chain hits of the time since the previous chain hit, divided by the chain's length. High means they kept the chain alive."
+                title="Sum over their chain hits of the time since the previous chain hit, divided by the chain time of every chain in the selected wars. High means they kept the chain alive."
                 {...sortProps}
               />
               <SortHeader
                 label="Armory Xanax"
                 sortKey="xanax"
                 align="right"
-                title="Xanax taken from the faction armory during the selected wars"
+                title="Xanax taken from the faction armory during the selected wars, or in the 48 hours before each one started"
+                {...sortProps}
+              />
+              <SortHeader
+                label="Respect / hit"
+                sortKey="respectPerHit"
+                align="right"
+                title="Chain bonus hits excluded"
                 {...sortProps}
               />
               {showFairFight && <th className="px-3 py-2 text-right font-medium">Fair fight</th>}
@@ -300,10 +301,31 @@ export function MemberTable({
                   <td
                     className={cn(
                       "px-3 py-2.5 text-right font-mono tabular-nums",
-                      !member.chainWatch && "text-muted-foreground",
+                      !member.chainWatch?.share && "text-muted-foreground",
                     )}
                   >
-                    {member.chainWatch === null ? "–" : `${(member.chainWatch * 100).toFixed(1)}%`}
+                    {member.chainWatch === null ? (
+                      "–"
+                    ) : member.chainWatch.hits === 0 ? (
+                      formatPercent(0)
+                    ) : (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-help underline decoration-dotted decoration-muted-foreground/60 underline-offset-4">
+                            {(member.chainWatch.share * 100).toFixed(1)}%
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="font-mono">
+                          {formatDuration(member.chainWatch.seconds)} of{" "}
+                          {formatDuration(member.chainWatch.chainSeconds)} chain time
+                          <br />
+                          {member.chainWatch.hits} chain{" "}
+                          {member.chainWatch.hits === 1 ? "hit" : "hits"}, on average{" "}
+                          {formatDuration(member.chainWatch.seconds / member.chainWatch.hits)} after
+                          the previous one
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                   </td>
                   <td
                     className={cn(
@@ -311,7 +333,12 @@ export function MemberTable({
                       !armoryXanax?.get(member.id) && "text-muted-foreground",
                     )}
                   >
-                    {armoryXanax ? (armoryXanax.get(member.id) ?? 0) : "–"}
+                    {armoryXanax ? (armoryXanax.get(member.id)?.total ?? 0) : "–"}
+                    {(armoryXanax?.get(member.id)?.beforeWar ?? 0) > 0 && (
+                      <div className="text-[10px] text-muted-foreground">
+                        {armoryXanax?.get(member.id)?.beforeWar} before start
+                      </div>
+                    )}
                   </td>
                   <td className="px-3 py-2.5 text-right font-mono tabular-nums">
                     {member.hits - member.bonusHits > 0 ? formatRespect(member.respectPerHit) : "–"}

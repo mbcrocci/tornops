@@ -18,7 +18,12 @@ import type {
 } from "@/lib/faction";
 import { type EnemyMember, useCredentialsStore, useGlobalStore } from "@/lib/stores";
 import { observeFactionResponse } from "@/lib/faction-presence";
-import { type ArmoryNews, countArmoryXanax } from "@/lib/armory";
+import {
+  type ArmoryNews,
+  countArmoryXanax,
+  PRE_WAR_XANAX_SECONDS,
+  type XanaxUse,
+} from "@/lib/armory";
 import type { User } from "@/lib/user";
 import { withTimeout } from "@/lib/utils";
 import { useFFScouterData } from "./use-ffscouter";
@@ -275,13 +280,14 @@ const getFactionAttackHistory = async (
   };
 };
 
-// Counts Xanax taken from the faction armory during the given wars, per member.
+// Counts Xanax taken from the faction armory during the given wars, and in the hours before
+// each one started, per member.
 const getFactionArmoryXanax = async (
   key: string,
   ranges: WarAttackRange[],
   signal?: AbortSignal,
-): Promise<Map<number, number>> => {
-  const news = new Map<string, ArmoryNews>();
+): Promise<Map<number, XanaxUse>> => {
+  const news = new Map<string, ArmoryNews & { beforeWar: boolean }>();
   let hasRequested = false;
 
   for (const range of ranges) {
@@ -298,7 +304,7 @@ const getFactionArmoryXanax = async (
       if (!nextUrl) {
         url.searchParams.set("cat", "armoryAction");
         url.searchParams.set("striptags", "false");
-        url.searchParams.set("from", range.from.toString());
+        url.searchParams.set("from", (range.from - PRE_WAR_XANAX_SECONDS).toString());
         url.searchParams.set("limit", "100");
         url.searchParams.set("sort", "ASC");
       }
@@ -334,7 +340,11 @@ const getFactionArmoryXanax = async (
 
       rateLimitRetries = 0;
       completedUrls.add(requestUrl);
-      for (const item of data.news as ArmoryNews[]) news.set(item.id, item);
+      for (const item of data.news as ArmoryNews[]) {
+        // Use from inside another selected war counts as during that war.
+        const seenBeforeWar = news.get(item.id)?.beforeWar ?? true;
+        news.set(item.id, { ...item, beforeWar: seenBeforeWar && item.timestamp < range.from });
+      }
 
       const metadata = isRecord(data._metadata) ? data._metadata : null;
       const links = metadata && isRecord(metadata.links) ? metadata.links : null;

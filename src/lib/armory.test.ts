@@ -32,11 +32,11 @@ describe("countArmoryXanax", () => {
       `${link(1, "A")} used one of the faction's Xanax items`,
       `${link(2, "B")} used one of the faction's Xanax items`,
       `${link(1, "A")} used one of the faction's Xanax items`,
-    ].map((text, index) => ({ id: String(index), text, timestamp: index }));
+    ].map((text, index) => ({ id: String(index), text, timestamp: index, beforeWar: index === 0 }));
     expect(countArmoryXanax(news)).toEqual(
       new Map([
-        [1, 2],
-        [2, 1],
+        [1, { total: 2, beforeWar: 1 }],
+        [2, { total: 1, beforeWar: 0 }],
       ]),
     );
   });
