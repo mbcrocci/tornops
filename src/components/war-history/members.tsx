@@ -17,15 +17,22 @@ type SortKey =
   | "hits"
   | "failed"
   | "energy"
+  | "xanax"
+  | "chainWatch"
   | "respectPerHit"
   | "respect"
   | "hitsTaken";
 
-const SORTERS: Record<SortKey, (member: MemberSummary) => number> = {
+const SORTERS: Record<
+  SortKey,
+  (member: MemberSummary, armoryXanax: Map<number, number> | undefined) => number
+> = {
   reliability: (member) => member.reliableWindow?.confidence ?? 0,
   hits: (member) => member.hits,
   failed: (member) => (member.attacks ? member.failed / member.attacks : 0),
   energy: (member) => member.energy,
+  xanax: (member, armoryXanax) => armoryXanax?.get(member.id) ?? 0,
+  chainWatch: (member) => member.chainWatch ?? 0,
   respectPerHit: (member) => member.respectPerHit,
   respect: (member) => member.respect,
   hitsTaken: (member) => member.hitsTaken,
@@ -127,14 +134,25 @@ function SortHeader({
   );
 }
 
-export function MemberTable({ members }: { members: MemberSummary[] }) {
+export function MemberTable({
+  members,
+  armoryXanax,
+  armoryXanaxError,
+}: {
+  members: MemberSummary[];
+  armoryXanax?: Map<number, number>;
+  armoryXanaxError?: boolean;
+}) {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("reliability");
   const showFairFight = members.some((member) => member.fairFight !== null);
   const query = search.trim().toLowerCase();
   const rows = members
     .filter((member) => member.attacks > 0 && member.name.toLowerCase().includes(query))
-    .sort((a, b) => SORTERS[sortKey](b) - SORTERS[sortKey](a) || b.hits - a.hits);
+    .sort(
+      (a, b) =>
+        SORTERS[sortKey](b, armoryXanax) - SORTERS[sortKey](a, armoryXanax) || b.hits - a.hits,
+    );
   const sortProps = { active: sortKey, onSort: setSortKey };
 
   return (
@@ -148,6 +166,11 @@ export function MemberTable({ members }: { members: MemberSummary[] }) {
             <p className="mt-1 text-xs text-muted-foreground">
               Each member's most dependable three-hour window, and how well they hit
             </p>
+            {armoryXanaxError && (
+              <p className="mt-1 text-xs text-destructive">
+                Armory Xanax use could not be loaded. It needs faction API access on the key.
+              </p>
+            )}
           </div>
           <label className="relative block">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -161,7 +184,7 @@ export function MemberTable({ members }: { members: MemberSummary[] }) {
         </div>
       </CardHeader>
       <CardContent className="overflow-x-auto px-0">
-        <table className="w-full min-w-[1040px] text-sm">
+        <table className="w-full min-w-[1200px] text-sm">
           <thead className="border-y bg-muted/35 text-left text-xs text-muted-foreground">
             <tr>
               <th className="px-4 py-2 font-medium">Member</th>
@@ -186,6 +209,20 @@ export function MemberTable({ members }: { members: MemberSummary[] }) {
                 sortKey="respectPerHit"
                 align="right"
                 title="Chain bonus hits excluded"
+                {...sortProps}
+              />
+              <SortHeader
+                label="Chain watch"
+                sortKey="chainWatch"
+                align="right"
+                title="Sum over their chain hits of the time since the previous chain hit, divided by the chain's length. High means they kept the chain alive."
+                {...sortProps}
+              />
+              <SortHeader
+                label="Armory Xanax"
+                sortKey="xanax"
+                align="right"
+                title="Xanax taken from the faction armory during the selected wars"
                 {...sortProps}
               />
               {showFairFight && <th className="px-3 py-2 text-right font-medium">Fair fight</th>}
@@ -259,6 +296,22 @@ export function MemberTable({ members }: { members: MemberSummary[] }) {
                         {member.revitalizeProcs} revitalize
                       </div>
                     )}
+                  </td>
+                  <td
+                    className={cn(
+                      "px-3 py-2.5 text-right font-mono tabular-nums",
+                      !member.chainWatch && "text-muted-foreground",
+                    )}
+                  >
+                    {member.chainWatch === null ? "–" : `${(member.chainWatch * 100).toFixed(1)}%`}
+                  </td>
+                  <td
+                    className={cn(
+                      "px-3 py-2.5 text-right font-mono tabular-nums",
+                      !armoryXanax?.get(member.id) && "text-muted-foreground",
+                    )}
+                  >
+                    {armoryXanax ? (armoryXanax.get(member.id) ?? 0) : "–"}
                   </td>
                   <td className="px-3 py-2.5 text-right font-mono tabular-nums">
                     {member.hits - member.bonusHits > 0 ? formatRespect(member.respectPerHit) : "–"}

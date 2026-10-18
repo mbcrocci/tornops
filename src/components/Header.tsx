@@ -9,7 +9,7 @@ const links = [
   { to: "/", label: "War room", icon: Swords },
   { to: "/chain-watcher", label: "Chain watcher", icon: Activity },
   { to: "/war-planning", label: "War planning", icon: Radio },
-  { to: "/attack-history", label: "Faction attack history", icon: Swords },
+  { to: "/war-report", label: "War report", icon: Swords },
   { to: "/bounties", label: "Bounties", icon: Crosshair },
 ] as const;
 

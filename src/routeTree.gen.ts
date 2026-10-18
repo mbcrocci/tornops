@@ -14,6 +14,7 @@ import { Route as AttackHistoryRouteImport } from './routes/attack-history'
 import { Route as BountiesRouteImport } from './routes/bounties'
 import { Route as ChainWatcherRouteImport } from './routes/chain-watcher'
 import { Route as WarPlanningRouteImport } from './routes/war-planning'
+import { Route as WarReportRouteImport } from './routes/war-report'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,6 +41,11 @@ const WarPlanningRoute = WarPlanningRouteImport.update({
   path: '/war-planning',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WarReportRoute = WarReportRouteImport.update({
+  id: '/war-report',
+  path: '/war-report',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/bounties': typeof BountiesRoute
   '/chain-watcher': typeof ChainWatcherRoute
   '/war-planning': typeof WarPlanningRoute
+  '/war-report': typeof WarReportRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/bounties': typeof BountiesRoute
   '/chain-watcher': typeof ChainWatcherRoute
   '/war-planning': typeof WarPlanningRoute
+  '/war-report': typeof WarReportRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +70,25 @@ export interface FileRoutesById {
   '/bounties': typeof BountiesRoute
   '/chain-watcher': typeof ChainWatcherRoute
   '/war-planning': typeof WarPlanningRoute
+  '/war-report': typeof WarReportRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/attack-history' | '/bounties' | '/chain-watcher' | '/war-planning'
+    | '/'
+    | '/attack-history'
+    | '/bounties'
+    | '/chain-watcher'
+    | '/war-planning'
+    | '/war-report'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/attack-history' | '/bounties' | '/chain-watcher' | '/war-planning'
+  to:
+    | '/'
+    | '/attack-history'
+    | '/bounties'
+    | '/chain-watcher'
+    | '/war-planning'
+    | '/war-report'
   id:
     | '__root__'
     | '/'
@@ -76,6 +96,7 @@ export interface FileRouteTypes {
     | '/bounties'
     | '/chain-watcher'
     | '/war-planning'
+    | '/war-report'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -84,6 +105,7 @@ export interface RootRouteChildren {
   BountiesRoute: typeof BountiesRoute
   ChainWatcherRoute: typeof ChainWatcherRoute
   WarPlanningRoute: typeof WarPlanningRoute
+  WarReportRoute: typeof WarReportRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -123,6 +145,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WarPlanningRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/war-report': {
+      id: '/war-report'
+      path: '/war-report'
+      fullPath: '/war-report'
+      preLoaderRoute: typeof WarReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -132,6 +161,7 @@ const rootRouteChildren: RootRouteChildren = {
   BountiesRoute: BountiesRoute,
   ChainWatcherRoute: ChainWatcherRoute,
   WarPlanningRoute: WarPlanningRoute,
+  WarReportRoute: WarReportRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

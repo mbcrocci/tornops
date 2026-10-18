@@ -18,6 +18,7 @@ import type {
 } from "@/lib/faction";
 import { type EnemyMember, useCredentialsStore, useGlobalStore } from "@/lib/stores";
 import { observeFactionResponse } from "@/lib/faction-presence";
+import { type ArmoryNews, countArmoryXanax } from "@/lib/armory";
 import type { User } from "@/lib/user";
 import { withTimeout } from "@/lib/utils";
 import { useFFScouterData } from "./use-ffscouter";
@@ -272,6 +273,89 @@ const getFactionAttackHistory = async (
     attacks: [...attacks.outgoing.values()].sort(byTime),
     incoming: [...attacks.incoming.values()].sort(byTime),
   };
+};
+
+// Counts Xanax taken from the faction armory during the given wars, per member.
+const getFactionArmoryXanax = async (
+  key: string,
+  ranges: WarAttackRange[],
+  signal?: AbortSignal,
+): Promise<Map<number, number>> => {
+  const news = new Map<string, ArmoryNews>();
+  let hasRequested = false;
+
+  for (const range of ranges) {
+    let nextUrl: string | null = null;
+    let rateLimitRetries = 0;
+    const completedUrls = new Set<string>();
+    const to = range.to === 0 ? Math.floor(Date.now() / 1000) : range.to;
+
+    do {
+      if (hasRequested) await waitFor(1_000, signal);
+      hasRequested = true;
+
+      const url = new URL(nextUrl ?? "https://api.torn.com/v2/faction/news");
+      if (!nextUrl) {
+        url.searchParams.set("cat", "armoryAction");
+        url.searchParams.set("striptags", "false");
+        url.searchParams.set("from", range.from.toString());
+        url.searchParams.set("limit", "100");
+        url.searchParams.set("sort", "ASC");
+      }
+      url.searchParams.set("to", to.toString());
+      const requestUrl = url.toString();
+      if (completedUrls.has(requestUrl)) break;
+
+      const response = await fetch(url, {
+        headers: { Authorization: `ApiKey ${key}` },
+        signal,
+      });
+      const data: unknown = await response.json();
+      const apiError = isRecord(data) && isRecord(data.error) ? data.error : null;
+      const code = typeof apiError?.code === "number" ? apiError.code : undefined;
+
+      if ((response.status === 429 || code === 5) && rateLimitRetries < 3) {
+        rateLimitRetries += 1;
+        await waitFor(65_000, signal);
+        continue;
+      }
+      if (!response.ok) {
+        throw new Error(`Torn API request failed (${response.status})`);
+      }
+      if (apiError) {
+        throw new TornApiError(
+          typeof apiError.error === "string" ? apiError.error : "Torn API returned an error",
+          code,
+        );
+      }
+      if (!isRecord(data) || !Array.isArray(data.news)) {
+        throw new Error("Torn API returned incomplete faction news");
+      }
+
+      rateLimitRetries = 0;
+      completedUrls.add(requestUrl);
+      for (const item of data.news as ArmoryNews[]) news.set(item.id, item);
+
+      const metadata = isRecord(data._metadata) ? data._metadata : null;
+      const links = metadata && isRecord(metadata.links) ? metadata.links : null;
+      nextUrl = links && typeof links.next === "string" ? links.next : null;
+    } while (nextUrl);
+  }
+
+  return countArmoryXanax([...news.values()]);
+};
+
+export const useFactionArmoryXanax = (ranges: WarAttackRange[]) => {
+  const key = useCredentialsStore((state) => state.publicKey ?? "");
+  const rangeKey = ranges.map((range) => `${range.id}:${range.from}:${range.to}`).join(",");
+
+  return useQuery({
+    queryKey: ["faction-armory-xanax", rangeKey, key],
+    queryFn: ({ signal }) => getFactionArmoryXanax(key, ranges, signal),
+    enabled: Boolean(key && ranges.length),
+    staleTime: 60_000,
+    retry: false,
+  });
 };
 
 export const rankedWarsFromCache = (cachedWars: CachedWarData[]): FactionRankedWar[] => {

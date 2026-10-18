@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import {
+  useFactionArmoryXanax,
   useFactionAttackHistory,
   useFactionRankedWars,
   useUserFactionData,
@@ -82,7 +83,7 @@ function Notice({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-export function AttackHistory() {
+export function WarReport() {
   const [timeZone, setTimeZone] = useState("local");
   const [selectedWarIds, setSelectedWarIds] = useState<number[] | null>(null);
   const warsQuery = useFactionRankedWars();
@@ -104,6 +105,7 @@ export function AttackHistory() {
     [selectedWars],
   );
   const attackQuery = useFactionAttackHistory(attackRanges);
+  const xanaxQuery = useFactionArmoryXanax(attackRanges);
   // A war in progress is analysed up to when its attacks were last fetched.
   const fetchedAt = Math.floor((attackQuery.dataUpdatedAt || Date.now()) / 1000);
   const analysisRanges = useMemo(
@@ -179,7 +181,10 @@ export function AttackHistory() {
   const error = warsQuery.error ?? attackQuery.error;
   const refresh = () => {
     void warsQuery.refetch();
-    if (selectedWars.length) void attackQuery.refetchFresh();
+    if (selectedWars.length) {
+      void attackQuery.refetchFresh();
+      void xanaxQuery.refetch();
+    }
   };
   const toggleWar = (warId: number) => {
     const currentIds = selectedWarIds ?? selectedWars.map((war) => war.id);
@@ -197,7 +202,7 @@ export function AttackHistory() {
             Faction intelligence
           </div>
           <h1 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">
-            Faction attack history
+            War report
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
             Combine one or more ranked wars, including one in progress. Only ranked-war attacks
@@ -495,7 +500,11 @@ export function AttackHistory() {
                 <WarComparison rows={warRows} ownFactionId={ownFactionId} timeZone={timeZone} />
               )}
 
-              <MemberTable members={analysis.members} />
+              <MemberTable
+                members={analysis.members}
+                armoryXanax={xanaxQuery.data}
+                armoryXanaxError={xanaxQuery.isError}
+              />
 
               <AbsentMembers absent={absent} rosterAvailable={roster !== null} />
 

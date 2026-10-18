@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 import type { FactionAttack } from "@/lib/faction";
 import {
   analyzeWar,
+  chainWatch,
   dangerWindows,
   findAbsentMembers,
   pushWindows,
@@ -241,5 +242,30 @@ describe("findAbsentMembers", () => {
         hitsTaken: 0,
       },
     ]);
+  });
+});
+
+describe("chainWatch", () => {
+  it("credits each hit with the time since the previous chain hit", () => {
+    const watch = chainWatch([
+      attack(1, "2026-01-01T00:00:00Z", 1, { chain: 1 }),
+      attack(2, "2026-01-01T00:01:00Z", 2, { chain: 2 }),
+      attack(3, "2026-01-01T00:04:00Z", 1, { chain: 3 }),
+    ]);
+    expect(watch.chainSeconds).toBe(240);
+    expect(watch.seconds.get(1)).toBe(180);
+    expect(watch.seconds.get(2)).toBe(60);
+  });
+
+  it("starts over when a new chain begins and caps gaps at the chain timeout", () => {
+    const watch = chainWatch([
+      attack(1, "2026-01-01T00:00:00Z", 1, { chain: 5 }),
+      attack(2, "2026-01-01T00:02:00Z", 2, { chain: 1 }),
+      attack(3, "2026-01-01T00:20:00Z", 2, { chain: 9 }),
+      attack(4, "2026-01-01T00:21:00Z", 1, { result: "Lost", respect_gain: 0, chain: 0 }),
+    ]);
+    expect(watch.chainSeconds).toBe(300);
+    expect(watch.seconds.get(2)).toBe(300);
+    expect(watch.seconds.has(1)).toBe(false);
   });
 });

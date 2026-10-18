@@ -106,6 +106,7 @@ export type MemberSummary = {
   fairFight: number | null;
   energy: number;
   revitalizeProcs: number;
+  chainWatch: number | null;
   bonuses: MemberBonuses;
   hitsTaken: number;
   respectLost: number;
@@ -283,6 +284,36 @@ export function summarizeAttacks(
       incoming.flatMap((attack) => (attack.attacker ? [attack.attacker.id] : [])),
     ).size,
   };
+}
+
+// The chain timer never runs longer than five minutes, so a longer gap means hits between
+// them were not ranked-war hits and were not loaded.
+const CHAIN_TIMEOUT_SECONDS = 5 * 60;
+
+export type ChainWatch = { seconds: Map<number, number>; chainSeconds: number };
+
+// Credits each chain hit with the time since the previous chain hit. A member who keeps the
+// chain alive when the timer runs low earns a large share; the shares add up to 100%.
+export function chainWatch(outgoing: FactionAttack[]): ChainWatch {
+  const chainHits = outgoing
+    .filter((attack) => isHit(attack) && attack.attacker && (attack.chain ?? 0) > 0)
+    .sort((a, b) => a.ended - b.ended);
+  const seconds = new Map<number, number>();
+  let chainSeconds = 0;
+  let previous: FactionAttack | null = null;
+
+  for (const attack of chainHits) {
+    // The chain count only goes down when a new chain has started.
+    if (previous && (attack.chain as number) > (previous.chain as number)) {
+      const elapsed = Math.min(attack.ended - previous.ended, CHAIN_TIMEOUT_SECONDS);
+      const id = (attack.attacker as NonNullable<FactionAttack["attacker"]>).id;
+      seconds.set(id, (seconds.get(id) ?? 0) + elapsed);
+      chainSeconds += elapsed;
+    }
+    previous = attack;
+  }
+
+  return { seconds, chainSeconds };
 }
 
 export function analyzeWar({
@@ -479,6 +510,7 @@ export function analyzeWar({
     };
   });
 
+  const watch = chainWatch(outgoing);
   const memberRows: MemberSummary[] = [...members.values()]
     .map((summary) => {
       const totals = summarizeAttacks(summary.outgoing, []);
@@ -520,6 +552,9 @@ export function analyzeWar({
         fairFight: totals.fairFight,
         energy: (totals.attacks - revitalizeProcs(summary.outgoing)) * ENERGY_PER_ATTACK,
         revitalizeProcs: revitalizeProcs(summary.outgoing),
+        chainWatch: watch.chainSeconds
+          ? (watch.seconds.get(summary.id) ?? 0) / watch.chainSeconds
+          : null,
         bonuses: summarizeBonuses(summary.outgoing),
         hitsTaken: summary.hitsTaken,
         respectLost: summary.respectLost,
