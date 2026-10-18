@@ -9,10 +9,10 @@ import {
 } from "react";
 
 export const THEME_PRESETS = [
-  { id: "default", label: "Default" },
+  { id: "gold-skeumorphic", label: "Gold Skeumorphic" },
+  { id: "brutalist", label: "Brutalist" },
   { id: "astrovista", label: "AstroVista" },
   { id: "whatsapp", label: "WhatsApp" },
-  { id: "gold-skeumorphic", label: "Gold Skeumorphic" },
 ] as const;
 
 export type ThemeMode = "dark" | "light" | "system";
@@ -62,7 +62,7 @@ function writeStorage(key: string, value: string) {
 export function ThemeProvider({
   children,
   defaultTheme = "system",
-  defaultPreset = "default",
+  defaultPreset = "gold-skeumorphic",
   storageKey = "vite-ui-theme",
   presetStorageKey = "tornops-theme-preset",
 }: ThemeProviderProps) {
@@ -72,6 +72,8 @@ export function ThemeProvider({
   });
   const [preset, setPresetState] = useState<ThemePreset>(() => {
     const storedPreset = readStorage(presetStorageKey);
+    // "default" was renamed to "brutalist" when Gold Skeumorphic became the default.
+    if (storedPreset === "default") return "brutalist";
     return isThemePreset(storedPreset) ? storedPreset : defaultPreset;
   });
 

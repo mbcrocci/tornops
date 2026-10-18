@@ -12,9 +12,12 @@
           const storedMode = localStorage.getItem("vite-ui-theme");
           const mode = ["light", "dark", "system"].includes(storedMode) ? storedMode : "system";
           const storedPreset = localStorage.getItem("tornops-theme-preset");
-          const preset = ["default", "astrovista"].includes(storedPreset)
-            ? storedPreset
-            : "default";
+          const preset =
+            storedPreset === "default"
+              ? "brutalist"
+              : ["gold-skeumorphic", "brutalist", "astrovista", "whatsapp"].includes(storedPreset)
+                ? storedPreset
+                : "gold-skeumorphic";
           const resolvedMode =
             mode === "system"
               ? matchMedia("(prefers-color-scheme: dark)").matches
@@ -27,7 +30,7 @@
           root.dataset.theme = preset;
         } catch {
           document.documentElement.classList.add("light");
-          document.documentElement.dataset.theme = "default";
+          document.documentElement.dataset.theme = "gold-skeumorphic";
         }
       })();
     </script>
