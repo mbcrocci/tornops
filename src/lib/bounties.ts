@@ -31,6 +31,7 @@ export type BountyRow = BountyTarget & {
 };
 
 export type BountyFilters = {
+  minReward: number | undefined;
   maxLevel: number | undefined;
   maxFF: number | undefined;
   onlyAvailable: boolean;
@@ -58,6 +59,10 @@ export function groupBounties(bounties: Bounty[]): BountyTarget[] {
   }
 
   return [...targets.values()].sort((a, b) => b.reward - a.reward);
+}
+
+export function withinReward(target: BountyTarget, minReward: number | undefined): boolean {
+  return minReward === undefined || target.reward >= minReward;
 }
 
 export function withinLevel(target: BountyTarget, maxLevel: number | undefined): boolean {

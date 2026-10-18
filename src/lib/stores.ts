@@ -44,6 +44,7 @@ export const useCredentialsStore = create<CredentialsState>()(
 );
 
 export const DEFAULT_BOUNTY_REFRESH_INTERVAL = 60_000;
+export const DEFAULT_BOUNTY_MIN_REWARD = 150_000;
 
 interface BountyState extends BountyFilters {
   refreshInterval: number;
@@ -54,6 +55,7 @@ interface BountyState extends BountyFilters {
 export const useBountyStore = create<BountyState>()(
   persist(
     (set) => ({
+      minReward: DEFAULT_BOUNTY_MIN_REWARD,
       maxLevel: undefined,
       maxFF: undefined,
       onlyAvailable: false,

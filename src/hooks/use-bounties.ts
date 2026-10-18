@@ -22,7 +22,12 @@ const FFSCOUTER_BATCH_SIZE = 200;
 const throttle = createThrottle(60, 60_000);
 const tornGet = createTornGet({ throttle });
 
-const getBounties = async (key: string, signal: AbortSignal): Promise<Bounty[]> => {
+// Pages are sorted by reward, so paging stops at the first page that drops below the minimum.
+const getBounties = async (
+  key: string,
+  minReward: number | undefined,
+  signal: AbortSignal,
+): Promise<Bounty[]> => {
   const bounties: Bounty[] = [];
   let nextUrl: string | null = "https://api.torn.com/v2/torn/bounties?limit=100";
 
@@ -31,7 +36,10 @@ const getBounties = async (key: string, signal: AbortSignal): Promise<Bounty[]> 
     if (!Array.isArray(data.bounties)) {
       throw new Error("Torn API returned incomplete bounty data");
     }
-    bounties.push(...(data.bounties as Bounty[]));
+    const pageBounties = data.bounties as Bounty[];
+    bounties.push(...pageBounties);
+    const lowest = pageBounties.at(-1)?.reward;
+    if (minReward !== undefined && lowest !== undefined && lowest < minReward) break;
 
     const metadata = isRecord(data._metadata) ? data._metadata : null;
     const links = metadata && isRecord(metadata.links) ? metadata.links : null;
@@ -60,10 +68,11 @@ const getPlayerStatus = async (key: string, playerId: number): Promise<StatusCla
 
 export const useBounties = () => {
   const key = useCredentialsStore((state) => state.publicKey ?? "");
+  const minReward = useBountyStore((state) => state.minReward);
 
   return useQuery({
-    queryKey: ["bounties", key],
-    queryFn: ({ signal }) => getBounties(key, signal),
+    queryKey: ["bounties", key, minReward],
+    queryFn: ({ signal }) => getBounties(key, minReward, signal),
     enabled: Boolean(key),
     staleTime: BOUNTY_LIST_REFRESH_INTERVAL,
     refetchInterval: BOUNTY_LIST_REFRESH_INTERVAL,

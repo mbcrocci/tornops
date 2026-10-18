@@ -8,6 +8,7 @@ import {
   statusRefetchDelay,
   withinFF,
   withinLevel,
+  withinReward,
 } from "./bounties";
 
 const bounty = (overrides: Partial<Bounty>): Bounty => ({
@@ -52,6 +53,13 @@ describe("groupBounties", () => {
 });
 
 describe("filters", () => {
+  it("limits by highest reward only when a min is set", () => {
+    const [target] = groupBounties([bounty({ reward: 150_000 }), bounty({ reward: 50_000 })]);
+    expect(withinReward(target, undefined)).toBe(true);
+    expect(withinReward(target, 150_000)).toBe(true);
+    expect(withinReward(target, 150_001)).toBe(false);
+  });
+
   it("limits by level only when a max is set", () => {
     const [target] = groupBounties([bounty({ target_level: 20 })]);
     expect(withinLevel(target, undefined)).toBe(true);

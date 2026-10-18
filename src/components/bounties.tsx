@@ -8,7 +8,14 @@ import {
   useBountyStatuses,
 } from "@/hooks/use-bounties";
 import type { FFScouterData } from "@/hooks/use-ffscouter";
-import { type BountyRow, groupBounties, isAvailable, withinFF, withinLevel } from "@/lib/bounties";
+import {
+  type BountyRow,
+  groupBounties,
+  isAvailable,
+  withinFF,
+  withinLevel,
+  withinReward,
+} from "@/lib/bounties";
 import { playerProfileLink } from "@/lib/links";
 import { useBountyStore, useCredentialsStore } from "@/lib/stores";
 import { DataTableColumnHeader } from "./data-table-column-header";
@@ -129,9 +136,24 @@ const parseOptionalNumber = (value: string) => {
 
 function BountyFiltersBar({ hasFFScouterKey }: { hasFFScouterKey: boolean }) {
   const id = useId();
-  const { maxLevel, maxFF, onlyAvailable, refreshInterval, setFilters, setRefreshInterval } =
-    useBountyStore();
+  const {
+    minReward,
+    maxLevel,
+    maxFF,
+    onlyAvailable,
+    refreshInterval,
+    setFilters,
+    setRefreshInterval,
+  } = useBountyStore();
   const [refreshSeconds, setRefreshSeconds] = useState(String(refreshInterval / 1000));
+  const [minRewardInput, setMinRewardInput] = useState(String(minReward ?? ""));
+
+  // Committed on blur so a half-typed amount doesn't refetch every bounty page.
+  const commitMinReward = () => {
+    const value = parseOptionalNumber(minRewardInput);
+    setFilters({ minReward: value });
+    setMinRewardInput(String(value ?? ""));
+  };
 
   const commitRefresh = () => {
     const seconds = Math.max(MIN_REFRESH_SECONDS, Number.parseFloat(refreshSeconds) || 0);
@@ -141,6 +163,23 @@ function BountyFiltersBar({ hasFFScouterKey }: { hasFFScouterKey: boolean }) {
 
   return (
     <div className="flex flex-wrap items-end gap-4">
+      <div className="flex flex-col gap-2">
+        <Label htmlFor={`${id}-reward`}>Min reward</Label>
+        <Input
+          id={`${id}-reward`}
+          className="w-32"
+          type="number"
+          min={0}
+          step={10_000}
+          placeholder="Any"
+          value={minRewardInput}
+          onChange={(e) => setMinRewardInput(e.target.value)}
+          onBlur={commitMinReward}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commitMinReward();
+          }}
+        />
+      </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor={`${id}-level`}>Max level</Label>
         <Input
@@ -197,12 +236,15 @@ function BountyFiltersBar({ hasFFScouterKey }: { hasFFScouterKey: boolean }) {
 
 export function Bounties() {
   const hasFFScouterKey = useCredentialsStore((state) => Boolean(state.ffscouterKey));
-  const { maxLevel, maxFF, onlyAvailable, refreshInterval } = useBountyStore();
+  const { minReward, maxLevel, maxFF, onlyAvailable, refreshInterval } = useBountyStore();
   const { data: bounties, dataUpdatedAt, isPending, isError, error, refetch } = useBounties();
 
   const targets = useMemo(
-    () => groupBounties(bounties ?? []).filter((target) => withinLevel(target, maxLevel)),
-    [bounties, maxLevel],
+    () =>
+      groupBounties(bounties ?? []).filter(
+        (target) => withinReward(target, minReward) && withinLevel(target, maxLevel),
+      ),
+    [bounties, minReward, maxLevel],
   );
   const { data: ffScouterData, isFetching: isFetchingFF } = useBountyFFScouterData(
     targets.map((target) => target.id),
