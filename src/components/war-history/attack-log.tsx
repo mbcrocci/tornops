@@ -9,6 +9,8 @@ import { Input } from "../ui/input";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 import { formatDateTime, formatRespect } from "./format";
 
+// The log is rarely read, so it opens short.
+const INITIAL_ROWS = 10;
 const PAGE_SIZE = 50;
 
 type Direction = "outgoing" | "incoming";
@@ -33,7 +35,7 @@ export function AttackLog({
   const [direction, setDirection] = useState<Direction>("outgoing");
   const [resultFilter, setResultFilter] = useState<ResultFilter>("all");
   const [search, setSearch] = useState("");
-  const [visible, setVisible] = useState(PAGE_SIZE);
+  const [visible, setVisible] = useState(INITIAL_ROWS);
   const query = search.trim().toLowerCase();
   const rows = (direction === "outgoing" ? outgoing : incoming)
     .filter((attack) => resultFilter === "all" || resultGroup(attack) === resultFilter)
@@ -44,7 +46,7 @@ export function AttackLog({
         (attack.attacker?.name.toLowerCase().includes(query) ?? false),
     )
     .reverse();
-  const reset = () => setVisible(PAGE_SIZE);
+  const reset = () => setVisible(INITIAL_ROWS);
 
   return (
     <Card>

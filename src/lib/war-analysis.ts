@@ -682,3 +682,161 @@ export function findAbsentMembers(
     })
     .sort((a, b) => order[a.joined] - order[b.joined] || a.name.localeCompare(b.name));
 }
+
+export type RespectPoint = { elapsed: number; gained: number; lost: number };
+
+// Cumulative respect since the start of the war. Combined wars are lined up by how long
+// they had been running, so the points add up their scores at the same moment.
+export function respectTimeline(
+  outgoing: FactionAttack[],
+  incoming: FactionAttack[],
+  ranges: WarRange[],
+): RespectPoint[] {
+  const duration = Math.max(0, ...ranges.map((range) => range.to - range.from));
+  if (duration === 0) return [];
+  // Around 200 steps, rounded to whole minutes.
+  const step = Math.max(60, Math.ceil(duration / 200 / 60) * 60);
+  const buckets = Math.ceil(duration / step);
+  const gained = Array.from({ length: buckets }, () => 0);
+  const lost = Array.from({ length: buckets }, () => 0);
+  const add = (attacks: FactionAttack[], into: number[]) => {
+    for (const attack of attacks) {
+      if (!isHit(attack)) continue;
+      const range = ranges.find((war) => attack.ended >= war.from && attack.ended <= war.to);
+      if (!range) continue;
+      const index = Math.min(buckets - 1, Math.floor((attack.ended - range.from) / step));
+      into[index] += attack.respect_gain;
+    }
+  };
+  add(outgoing, gained);
+  add(incoming, lost);
+
+  const points: RespectPoint[] = [{ elapsed: 0, gained: 0, lost: 0 }];
+  for (let index = 0; index < buckets; index += 1) {
+    const previous = points[points.length - 1];
+    points.push({
+      elapsed: Math.min(duration, (index + 1) * step),
+      gained: previous.gained + gained[index],
+      lost: previous.lost + lost[index],
+    });
+  }
+  return points;
+}
+
+export type BonusMark = { elapsed: number; chain: number; name: string; respect: number };
+
+// Our chain bonus hits, placed on the same elapsed-time axis as respectTimeline.
+export function bonusMarks(outgoing: FactionAttack[], ranges: WarRange[]): BonusMark[] {
+  return outgoing
+    .filter(isBonusHit)
+    .flatMap((attack) => {
+      const range = ranges.find((war) => attack.ended >= war.from && attack.ended <= war.to);
+      return range
+        ? [
+            {
+              elapsed: attack.ended - range.from,
+              chain: attack.chain as number,
+              name: attack.attacker?.name ?? "Stealthed",
+              respect: attack.respect_gain,
+            },
+          ]
+        : [];
+    })
+    .sort((a, b) => a.elapsed - b.elapsed);
+}
+
+export type ChainHitter = { id: number; name: string; hits: number };
+
+export type ChainHit = {
+  ended: number;
+  chain: number;
+  name: string;
+  respect: number;
+  // Seconds since the previous war hit in the chain; null for the first.
+  gap: number | null;
+  bonus: boolean;
+};
+
+export type ChainSummary = {
+  length: number;
+  started: number;
+  ended: number;
+  warHits: number;
+  respect: number;
+  bonusHits: { chain: number; name: string; respect: number }[];
+  longestGap: number;
+  // War hits that landed with less than this much left on the chain timer; the counts
+  // overlap. Gaps past the timeout are left out, since other hits kept the chain going.
+  closeCalls: { under60: number; under45: number; under30: number };
+  hitters: ChainHitter[];
+  hits: ChainHit[];
+};
+
+const countCloseCalls = (gaps: number[], left: number) =>
+  gaps.filter((gap) => gap > CHAIN_TIMEOUT_SECONDS - left && gap < CHAIN_TIMEOUT_SECONDS).length;
+
+// Groups chain hits into chains. Only ranked-war hits are loaded, so the length is the
+// highest chain count seen and gaps can hide hits on other targets.
+export function summarizeChains(attacks: FactionAttack[]): ChainSummary[] {
+  const chainHits = attacks
+    .filter((attack) => isHit(attack) && (attack.chain ?? 0) > 0)
+    .sort((a, b) => a.ended - b.ended);
+  const groups: FactionAttack[][] = [];
+  for (const attack of chainHits) {
+    const current = groups[groups.length - 1];
+    const previous = current?.[current.length - 1];
+    // The chain count only goes down when a new chain has started.
+    if (previous && (attack.chain as number) > (previous.chain as number)) {
+      current.push(attack);
+    } else {
+      groups.push([attack]);
+    }
+  }
+
+  return groups
+    .map((hits) => {
+      const hitters = new Map<number, ChainHitter>();
+      const gaps = hits.slice(1).map((attack, index) => attack.ended - hits[index].ended);
+      const longestGap = Math.max(0, ...gaps);
+      hits.forEach((attack) => {
+        if (!attack.attacker) return;
+        const hitter = hitters.get(attack.attacker.id) ?? {
+          id: attack.attacker.id,
+          name: attack.attacker.name,
+          hits: 0,
+        };
+        hitter.hits += 1;
+        hitters.set(hitter.id, hitter);
+      });
+      return {
+        length: Math.max(...hits.map((attack) => attack.chain as number)),
+        started: hits[0].ended,
+        ended: hits[hits.length - 1].ended,
+        warHits: hits.length,
+        respect: hits.reduce((total, attack) => total + attack.respect_gain, 0),
+        bonusHits: hits.filter(isBonusHit).map((attack) => ({
+          chain: attack.chain as number,
+          name: attack.attacker?.name ?? "Stealthed",
+          respect: attack.respect_gain,
+        })),
+        longestGap: Math.min(longestGap, CHAIN_TIMEOUT_SECONDS),
+        closeCalls: {
+          under60: countCloseCalls(gaps, 60),
+          under45: countCloseCalls(gaps, 45),
+          under30: countCloseCalls(gaps, 30),
+        },
+        hitters: [...hitters.values()].sort(
+          (a, b) => b.hits - a.hits || a.name.localeCompare(b.name),
+        ),
+        hits: hits.map((attack, index) => ({
+          ended: attack.ended,
+          chain: attack.chain as number,
+          name: attack.attacker?.name ?? "Stealthed",
+          respect: attack.respect_gain,
+          gap: index === 0 ? null : gaps[index - 1],
+          bonus: isBonusHit(attack),
+        })),
+      };
+    })
+    .sort((a, b) => b.started - a.started);
+}

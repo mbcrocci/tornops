@@ -19,7 +19,9 @@ import {
 } from "@/hooks/use-torn";
 import {
   analyzeWar,
+  bonusMarks,
   findAbsentMembers,
+  respectTimeline,
   type RosterMember,
   summarizeAttacks,
 } from "@/lib/war-analysis";
@@ -29,7 +31,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Checkbox } from "./ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { AttackLog } from "./war-history/attack-log";
-import { DayHeatmap, NetRespectByHour } from "./war-history/charts";
+import { Chains } from "./war-history/chains";
+import { DayHeatmap, WarScoreMoves } from "./war-history/charts";
 import {
   TIME_ZONES,
   formatRespect,
@@ -124,6 +127,11 @@ export function WarReport() {
     () => analyzeWar({ outgoing, incoming, ranges: analysisRanges, timeZone }),
     [outgoing, incoming, analysisRanges, timeZone],
   );
+  const timeline = useMemo(
+    () => respectTimeline(outgoing, incoming, analysisRanges),
+    [outgoing, incoming, analysisRanges],
+  );
+  const bonuses = useMemo(() => bonusMarks(outgoing, analysisRanges), [outgoing, analysisRanges]);
   const warRows = useMemo(
     () =>
       selectedWars.map((war) => {
@@ -476,7 +484,13 @@ export function WarReport() {
 
               <Card>
                 <CardContent className="py-3">
-                  <NetRespectByHour hours={analysis.hours} />
+                  <WarScoreMoves
+                    hours={analysis.hours}
+                    timeline={timeline}
+                    bonuses={bonuses}
+                    warStart={selectedWars.length === 1 ? selectedWars[0].start : null}
+                    timeZone={timeZone}
+                  />
                 </CardContent>
               </Card>
 
@@ -507,6 +521,8 @@ export function WarReport() {
               />
 
               <AbsentMembers absent={absent} rosterAvailable={roster !== null} />
+
+              <Chains outgoing={outgoing} incoming={incoming} timeZone={timeZone} />
 
               <AttackLog outgoing={outgoing} incoming={incoming} timeZone={timeZone} />
             </>

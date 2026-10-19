@@ -2,11 +2,14 @@ import { describe, expect, it } from "vite-plus/test";
 import type { FactionAttack } from "@/lib/faction";
 import {
   analyzeWar,
+  bonusMarks,
   chainWatch,
   dangerWindows,
   findAbsentMembers,
   pushWindows,
+  respectTimeline,
   type ScheduleWindow,
+  summarizeChains,
 } from "./war-analysis";
 
 const seconds = (iso: string) => Math.floor(new Date(iso).getTime() / 1000);
@@ -267,5 +270,86 @@ describe("chainWatch", () => {
     expect(watch.chainSeconds).toBe(300);
     expect(watch.seconds.get(2)).toBe(300);
     expect(watch.seconds.has(1)).toBe(false);
+  });
+});
+
+describe("respectTimeline", () => {
+  it("adds up respect from both sides since the war started", () => {
+    const from = seconds("2026-01-01T00:00:00Z");
+    const points = respectTimeline(
+      [attack(1, "2026-01-01T00:10:00Z", 1), attack(2, "2026-01-01T01:50:00Z", 1)],
+      [incoming(3, "2026-01-01T01:00:00Z", 50, 1)],
+      [{ from, to: from + 2 * 3600 }],
+    );
+    expect(points[0]).toEqual({ elapsed: 0, gained: 0, lost: 0 });
+    expect(points.at(-1)).toEqual({ elapsed: 7200, gained: 4, lost: 2 });
+    expect(points.find((point) => point.elapsed >= 3600)?.gained).toBe(2);
+  });
+
+  it("lines up combined wars by elapsed time", () => {
+    const first = seconds("2026-01-01T00:00:00Z");
+    const second = seconds("2026-02-01T00:00:00Z");
+    const points = respectTimeline(
+      [attack(1, "2026-01-01T00:30:00Z", 1), attack(2, "2026-02-01T00:30:00Z", 1)],
+      [],
+      [
+        { from: first, to: first + 3600 },
+        { from: second, to: second + 3600 },
+      ],
+    );
+    expect(points.find((point) => point.elapsed > 1800)?.gained).toBe(4);
+  });
+});
+
+describe("summarizeChains", () => {
+  it("splits chains when the count drops and tracks the closest call", () => {
+    const chains = summarizeChains([
+      attack(1, "2026-01-01T00:00:00Z", 1, { chain: 8 }),
+      attack(2, "2026-01-01T00:04:00Z", 2, { chain: 9 }),
+      attack(3, "2026-01-01T00:05:00Z", 1, { chain: 10, respect_gain: 40 }),
+      attack(4, "2026-01-01T02:00:00Z", 2, { chain: 1 }),
+      attack(5, "2026-01-01T02:01:00Z", 3, { result: "Lost", respect_gain: 0, chain: 0 }),
+    ]);
+    expect(chains).toHaveLength(2);
+    expect(chains[1]).toMatchObject({
+      length: 10,
+      warHits: 3,
+      respect: 44,
+      longestGap: 240,
+      bonusHits: [{ chain: 10, name: "Member 1", respect: 40 }],
+    });
+    expect(chains[1].hitters.map((hitter) => hitter.id)).toEqual([1, 2]);
+    expect(chains[0]).toMatchObject({ length: 1, warHits: 1 });
+  });
+
+  it("counts hits that landed with little time left on the chain timer", () => {
+    const [chain] = summarizeChains([
+      attack(1, "2026-01-01T00:00:00Z", 1, { chain: 1 }),
+      attack(2, "2026-01-01T00:04:40Z", 2, { chain: 2 }),
+      attack(3, "2026-01-01T00:09:00Z", 1, { chain: 3 }),
+      attack(4, "2026-01-01T00:13:10Z", 2, { chain: 4 }),
+      attack(5, "2026-01-01T00:14:00Z", 1, { chain: 5 }),
+      attack(6, "2026-01-01T00:21:00Z", 1, { chain: 7 }),
+    ]);
+    expect(chain.closeCalls).toEqual({ under60: 3, under45: 2, under30: 1 });
+    expect(chain.hits.map((hit) => hit.gap)).toEqual([null, 280, 260, 250, 50, 420]);
+  });
+});
+
+describe("bonusMarks", () => {
+  it("places our bonus hits by time since the war started", () => {
+    const from = seconds("2026-01-01T00:00:00Z");
+    const marks = bonusMarks(
+      [
+        attack(1, "2026-01-01T02:00:00Z", 1, { chain: 25, respect_gain: 20 }),
+        attack(2, "2026-01-01T01:00:00Z", 2, { chain: 10, respect_gain: 10 }),
+        attack(3, "2026-01-01T01:30:00Z", 2, { chain: 11 }),
+      ],
+      [{ from, to: from + 3 * 3600 }],
+    );
+    expect(marks).toEqual([
+      { elapsed: 3600, chain: 10, name: "Member 2", respect: 10 },
+      { elapsed: 7200, chain: 25, name: "Member 1", respect: 20 },
+    ]);
   });
 });
