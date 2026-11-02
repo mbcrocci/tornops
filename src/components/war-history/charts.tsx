@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 import { formatDateTime, formatDuration, formatHour, formatRespect, formatSigned } from "./format";
 
-function niceCeiling(value: number, steps = [1, 2, 2.5, 5, 10]) {
+export function niceCeiling(value: number, steps = [1, 2, 2.5, 5, 10]) {
   if (value <= 0) return 1;
   const magnitude = 10 ** Math.floor(Math.log10(value));
   for (const step of steps) {

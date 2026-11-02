@@ -2,7 +2,7 @@ import {
   Activity,
   AlertCircle,
   CalendarDays,
-  ChevronDown,
+  Coins,
   Layers3,
   RefreshCw,
   ShieldAlert,
@@ -10,6 +10,7 @@ import {
   Swords,
   Users,
 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { type ReactNode, useMemo, useState } from "react";
 import {
   useFactionArmoryXanax,
@@ -28,8 +29,6 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Checkbox } from "./ui/checkbox";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { AttackLog } from "./war-history/attack-log";
 import { Chains } from "./war-history/chains";
 import { DayHeatmap, WarScoreMoves } from "./war-history/charts";
@@ -48,6 +47,7 @@ import { HitQuality } from "./war-history/hit-quality";
 import { AbsentMembers, MemberTable } from "./war-history/members";
 import { PlanningWindows } from "./war-history/planning";
 import { WarComparison } from "./war-history/war-comparison";
+import { WarPicker } from "./war-history/war-picker";
 
 function Metric({
   label,
@@ -174,7 +174,6 @@ export function WarReport() {
   const absentThroughout = absent.filter((member) => member.joined === "before").length;
   const { totals } = analysis;
 
-  const selectedWarIdsSet = new Set(selectedWars.map((war) => war.id));
   const wins = selectedWars.filter((war) => warOutcome(war, ownFactionId) === "Victory").length;
   const losses = selectedWars.filter((war) => warOutcome(war, ownFactionId) === "Defeat").length;
   const ongoing = selectedWars.filter(isWarOngoing).length;
@@ -194,12 +193,6 @@ export function WarReport() {
       void xanaxQuery.refetch();
     }
   };
-  const toggleWar = (warId: number) => {
-    const currentIds = selectedWarIds ?? selectedWars.map((war) => war.id);
-    setSelectedWarIds(
-      currentIds.includes(warId) ? currentIds.filter((id) => id !== warId) : [...currentIds, warId],
-    );
-  };
 
   return (
     <main className="mx-auto w-full max-w-[1500px] px-3 pb-12 pt-5 sm:px-6">
@@ -218,84 +211,14 @@ export function WarReport() {
           </p>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-[minmax(290px,1fr)_auto_auto] sm:items-end">
-          <div className="grid gap-1 text-xs text-muted-foreground">
-            <span>Ranked wars</span>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full min-w-0 justify-between px-3 font-normal text-foreground"
-                  disabled={wars.length === 0}
-                >
-                  <span className="truncate">
-                    {selectedWars.length === 0
-                      ? "Choose wars"
-                      : selectedWars.length === 1
-                        ? `${warOpponent(selectedWars[0], factionQuery.data?.ID)?.name ?? `War ${selectedWars[0].id}`} · ${isWarOngoing(selectedWars[0]) ? "Ongoing" : formatWarDate(selectedWars[0].end, timeZone)}`
-                        : `${selectedWars.length} wars selected`}
-                  </span>
-                  <ChevronDown className="size-4 text-muted-foreground" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="start" className="w-[min(92vw,28rem)] p-0">
-                <div className="flex items-center justify-between border-b px-3 py-2">
-                  <span className="text-xs text-muted-foreground">
-                    {selectedWars.length} of {wars.length} selected
-                  </span>
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setSelectedWarIds(wars.map((war) => war.id))}
-                    >
-                      Select all
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setSelectedWarIds([])}>
-                      Clear
-                    </Button>
-                  </div>
-                </div>
-                <div className="max-h-80 overflow-y-auto p-1">
-                  {wars.map((war) => {
-                    const rival = warOpponent(war, factionQuery.data?.ID);
-                    const checkboxId = `war-${war.id}`;
-                    return (
-                      <label
-                        key={war.id}
-                        htmlFor={checkboxId}
-                        className="flex cursor-pointer items-center gap-3 rounded-sm px-2 py-2.5 hover:bg-muted"
-                      >
-                        <Checkbox
-                          id={checkboxId}
-                          checked={selectedWarIdsSet.has(war.id)}
-                          onCheckedChange={() => toggleWar(war.id)}
-                        />
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-medium text-foreground">
-                            {rival?.name ?? `War ${war.id}`}
-                          </span>
-                          <span className="block font-mono text-[10px] text-muted-foreground">
-                            {formatWarDate(war.start, timeZone)} · #{war.id}
-                            {isWarOngoing(war) && (
-                              <span className="ml-1.5 uppercase text-primary">· Ongoing</span>
-                            )}
-                          </span>
-                        </span>
-                        {war.target > 0 && (
-                          <span className="font-mono text-xs tabular-nums text-foreground">
-                            {war.factions.find((faction) => faction.id === factionQuery.data?.ID)
-                              ?.score ?? 0}
-                            :{rival?.score ?? 0}
-                          </span>
-                        )}
-                      </label>
-                    );
-                  })}
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
+        <div className="grid gap-2 sm:grid-cols-[minmax(290px,1fr)_auto_auto_auto] sm:items-end">
+          <WarPicker
+            wars={wars}
+            selectedWars={selectedWars}
+            ownFactionId={factionQuery.data?.ID}
+            timeZone={timeZone}
+            onChange={setSelectedWarIds}
+          />
           <label className="grid gap-1 text-xs text-muted-foreground">
             Display timezone
             <select
@@ -313,6 +236,12 @@ export function WarReport() {
           <Button variant="outline" onClick={refresh} disabled={isFetching}>
             <RefreshCw className={cn(isFetching && "animate-spin")} />
             Refresh
+          </Button>
+          <Button variant="outline" asChild>
+            <Link to="/war-payout" search={{ wars: selectedWars.map((war) => war.id) }}>
+              <Coins />
+              Payout
+            </Link>
           </Button>
         </div>
       </section>
