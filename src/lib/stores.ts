@@ -114,6 +114,7 @@ interface GlobalState {
   userMembers: UserMember[];
   lastRefreshTime: number | undefined;
   collapsedCards: boolean;
+  groupByStatus: boolean;
   chainAttackActivity: ObservedChainActivity[];
   communicationEmojis: boolean;
   setRefetchInterval: (refetchInterval: number) => void;
@@ -125,6 +126,7 @@ interface GlobalState {
   setUserMembers: (members: UserMember[]) => void;
   setLastRefreshTime: (timestamp: number) => void;
   setCollapsedCards: (collapsedCards: boolean) => void;
+  setGroupByStatus: (groupByStatus: boolean) => void;
   addChainAttackActivity: (activity: ObservedChainActivity[]) => void;
   clearChainAttackActivity: () => void;
   setCommunicationEmojis: (communicationEmojis: boolean) => void;
@@ -146,6 +148,7 @@ export const useGlobalStore = create<GlobalState>()(
       userMembers: [],
       lastRefreshTime: undefined,
       collapsedCards: false,
+      groupByStatus: false,
       chainAttackActivity: [],
       communicationEmojis: true,
 
@@ -158,6 +161,7 @@ export const useGlobalStore = create<GlobalState>()(
       setUserMembers: (members: UserMember[]) => set({ userMembers: members }),
       setLastRefreshTime: (timestamp: number) => set({ lastRefreshTime: timestamp }),
       setCollapsedCards: (collapsedCards: boolean) => set({ collapsedCards }),
+      setGroupByStatus: (groupByStatus: boolean) => set({ groupByStatus }),
       addChainAttackActivity: (activity: ObservedChainActivity[]) =>
         set((state) => ({
           chainAttackActivity: [...activity, ...state.chainAttackActivity].slice(0, 10),

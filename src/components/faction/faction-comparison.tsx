@@ -1,5 +1,5 @@
-import { PanelTopClose, PanelTopOpen, Pin, RotateCw, SlidersHorizontal } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { PanelTopClose, PanelTopOpen, Pin, RotateCw, Rows3, SlidersHorizontal } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import {
   useEnemyFactionData,
   useEnemyMembers,
@@ -307,12 +307,50 @@ function GroupHeader({
   );
 }
 
+/** Whether `content` (laid out at its natural width) fits inside `container`. */
+function useFits(container: RefObject<HTMLElement | null>, content: RefObject<HTMLElement | null>) {
+  const [fits, setFits] = useState(true);
+  useEffect(() => {
+    const outer = container.current;
+    const inner = content.current;
+    if (!outer || !inner || typeof ResizeObserver === "undefined") return;
+    const measure = () => setFits(inner.scrollWidth <= outer.clientWidth);
+    const observer = new ResizeObserver(measure);
+    observer.observe(outer);
+    observer.observe(inner);
+    measure();
+    return () => observer.disconnect();
+  }, [container, content]);
+  return fits;
+}
+
+function GroupToggle() {
+  const groupByStatus = useGlobalStore((state) => state.groupByStatus);
+  const setGroupByStatus = useGlobalStore((state) => state.setGroupByStatus);
+  return (
+    <Chip
+      pressed={groupByStatus}
+      label={groupByStatus ? "Show one list" : "Group by status"}
+      onClick={() => setGroupByStatus(!groupByStatus)}
+    >
+      <Rows3 className="size-3.5" aria-hidden />
+      Group
+    </Chip>
+  );
+}
+
 function Roster({ members, side }: { members: FactionMember[]; side: RosterSide }) {
   const columns = useFactionColumns(side);
   const filters = useGlobalStore((state) => state.filters);
   const setFilters = useGlobalStore((state) => state.setFilters);
+  const groupByStatus = useGlobalStore((state) => state.groupByStatus);
   const visible = filterMembers(members, filters);
   const secondaryActive = filters.ff.length + filters.onlineStatus.length;
+  // FF and activity sit next to the status chips when the row has room for them all, and fold
+  // behind "More filters" when it does not. The hidden copy measures the full row's width.
+  const rowRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLDivElement>(null);
+  const inline = useFits(rowRef, measureRef);
   // Opens by itself when one of its filters is already on, so an active filter is never hidden.
   const [showMore, setShowMore] = useState(secondaryActive > 0);
   const grouping = useMemo<RowGrouping<FactionMember>>(
@@ -323,26 +361,52 @@ function Roster({ members, side }: { members: FactionMember[]; side: RosterSide 
     }),
     [side],
   );
+  const secondary = <SecondaryFilters members={members} filters={filters} onChange={setFilters} />;
 
   return (
     <div className="flex flex-col gap-3 px-2 sm:px-3">
-      {/* One swipeable row on phones (faded at the edge to show it scrolls), wrapping on wider screens. */}
-      <div className="-mx-2 flex items-center gap-x-5 gap-y-2 overflow-x-auto contain-inline-size px-2 [mask-image:linear-gradient(to_right,black_85%,transparent)] [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:[mask-image:none]">
-        <StateChips members={members} filters={filters} onChange={setFilters} />
-        {/* FF and activity filters are used less often; they open on demand. */}
-        <Chip
-          pressed={showMore}
-          label={showMore ? "Hide FF and activity filters" : "Show FF and activity filters"}
-          onClick={() => setShowMore(!showMore)}
+      <div className="relative">
+        <div
+          ref={measureRef}
+          aria-hidden
+          inert
+          className="pointer-events-none invisible absolute top-0 left-0 flex w-max items-center gap-x-5"
         >
-          <SlidersHorizontal className="size-3.5" aria-hidden />
-          More filters
-          {secondaryActive > 0 && <span className="tabular-nums">{secondaryActive}</span>}
-        </Chip>
+          <StateChips members={members} filters={filters} onChange={setFilters} />
+          {secondary}
+          <GroupToggle />
+        </div>
+        {/* One swipeable row on phones (faded at the edge to show it scrolls), wrapping on wider screens. */}
+        <div
+          ref={rowRef}
+          className={cn(
+            "-mx-2 flex items-center gap-x-5 gap-y-2 overflow-x-auto contain-inline-size px-2 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0",
+            !inline &&
+              "[mask-image:linear-gradient(to_right,black_85%,transparent)] sm:[mask-image:none]",
+          )}
+        >
+          <StateChips members={members} filters={filters} onChange={setFilters} />
+          {inline ? (
+            secondary
+          ) : (
+            <Chip
+              pressed={showMore}
+              label={showMore ? "Hide FF and activity filters" : "Show FF and activity filters"}
+              onClick={() => setShowMore(!showMore)}
+            >
+              <SlidersHorizontal className="size-3.5" aria-hidden />
+              More filters
+              {secondaryActive > 0 && <span className="tabular-nums">{secondaryActive}</span>}
+            </Chip>
+          )}
+          <div className="ml-auto">
+            <GroupToggle />
+          </div>
+        </div>
       </div>
-      {showMore && (
+      {!inline && showMore && (
         <div className="-mx-2 overflow-x-auto px-2 [scrollbar-width:none] sm:mx-0 sm:px-0">
-          <SecondaryFilters members={members} filters={filters} onChange={setFilters} />
+          {secondary}
         </div>
       )}
       <DataTable
@@ -351,7 +415,7 @@ function Roster({ members, side }: { members: FactionMember[]; side: RosterSide 
         getRowId={(row) => String(row.id)}
         getRowClassName={side === "enemy" ? enemyRowClassName : undefined}
         className="-mx-2 rounded-none border-0 border-t sm:-mx-3 max-md:[&_thead]:hidden md:[&_td]:text-sm md:[&_table]:table-fixed md:[&_td]:px-3.5 md:[&_th]:px-3.5 [&_thead_tr]:bg-muted/40 [&_thead_tr]:hover:bg-muted/40"
-        grouping={grouping}
+        grouping={groupByStatus ? grouping : undefined}
       />
       {hasFilters(filters) && (
         <div className="flex items-center justify-between text-xs text-muted-foreground">
