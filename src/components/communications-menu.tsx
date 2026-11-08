@@ -8,6 +8,7 @@ import {
   type CommunicationPlayer,
 } from "@/lib/communications";
 import { useGlobalStore } from "@/lib/stores";
+import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -21,14 +22,18 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 export function CommunicationsMenu({
   player,
   size,
+  variant = "outline",
+  className,
 }: {
   player: CommunicationPlayer;
   size?: "icon-sm";
+  variant?: "outline" | "ghost";
+  className?: string;
 }) {
   const observation = useTravelObservations((state) => state.observations[player.id]);
   const emojis = useGlobalStore((state) => state.communicationEmojis);
   const [copied, setCopied] = useState(false);
-  const iconClass = size ? "size-4" : undefined;
+  const iconClass = size ? (variant === "ghost" ? "size-3.5" : "size-4") : undefined;
 
   const arrivalAt =
     observation?.status.state === "Traveling" ? observation.estimate?.arrivalAt : undefined;
@@ -44,7 +49,12 @@ export function CommunicationsMenu({
       <Tooltip delayDuration={750}>
         <TooltipTrigger asChild>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size={size} aria-label="Communications">
+            <Button
+              variant={variant}
+              size={size}
+              className={cn(variant === "ghost" && "size-7 text-muted-foreground", className)}
+              aria-label="Communications"
+            >
               {copied ? <Check className={iconClass} /> : <MessageSquare className={iconClass} />}
             </Button>
           </DropdownMenuTrigger>

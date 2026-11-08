@@ -472,7 +472,8 @@ const getFactionChainReport = async (key: string): Promise<FactionChainReport> =
 const getUserFactionData = async (key: string) => {
   const url = "https://api.torn.com/faction/";
   const params = new URLSearchParams();
-  params.set("selections", "basic");
+  // Ranked wars ride along so the war room scoreboard needs no request of its own.
+  params.set("selections", "basic,rankedwars");
 
   const response = await fetch(`${url}?${params.toString()}`, {
     headers: { Authorization: `ApiKey ${key}` },

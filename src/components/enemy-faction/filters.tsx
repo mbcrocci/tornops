@@ -2,7 +2,7 @@ import { Label } from "@/components/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export type OnlineStatusFilter = "Online" | "Idle" | "Offline";
-export type StateFilter = "Okay" | "Hospital" | "Abroad" | "Traveling";
+export type StateFilter = "Okay" | "Hospital" | "Abroad" | "Traveling" | "Federal";
 export type FFFilter = "0-2" | "2-4" | "4-6" | "6+";
 
 export interface FilterState {

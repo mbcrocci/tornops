@@ -27,7 +27,7 @@ function UserIdentification() {
         : "bg-gray-400";
 
   return (
-    <div className="max-w-28 rounded-md border bg-muted/30 px-2.5 py-1 text-left leading-tight sm:max-w-48">
+    <div className="hidden max-w-48 rounded-md border bg-muted/30 px-2.5 py-1 text-left leading-tight sm:block">
       <div className="flex items-center justify-between gap-1.5 text-xs font-medium">
         <span className="truncate" title={user.name}>
           {user.name}
@@ -51,7 +51,7 @@ export default function Header() {
   return (
     <header className="flex items-center border-b bg-background/95 backdrop-blur">
       <nav
-        className="mx-auto flex h-12 min-w-0 max-w-[1500px] flex-1 items-center gap-1 overflow-x-auto px-3 sm:px-6"
+        className="mx-auto flex h-12 min-w-0 max-w-[1500px] flex-1 items-center gap-1 overflow-x-auto px-3 [mask-image:linear-gradient(to_right,black_55%,transparent_92%)] [scrollbar-width:none] sm:px-6 lg:[mask-image:none]"
         aria-label="Main navigation"
       >
         <span className="mr-3 hidden font-mono text-xs font-bold tracking-[0.18em] sm:inline">

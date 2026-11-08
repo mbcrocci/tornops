@@ -16,7 +16,7 @@ export function TravelCountdown({ id, status }: { id: number; status: StatusClas
   if (!estimate)
     return (
       <span
-        className="block text-xs font-normal"
+        className="block text-[11px] font-normal opacity-80"
         title="Departure was not observed, or destination is unknown."
       >
         ETA unknown
@@ -28,7 +28,7 @@ export function TravelCountdown({ id, status }: { id: number; status: StatusClas
   const duration = `${hours ? `${hours}h ` : ""}${minutes}m ${seconds % 60}s`;
   const title = `Estimated arrival: ${new Date(estimate.arrivalAt).toLocaleTimeString()}. Departure occurred between status updates; arrival window ${new Date(estimate.earliestArrival).toLocaleTimeString()}–${new Date(estimate.latestArrival).toLocaleTimeString()}. ${estimate.method}${estimate.assumedMethod ? " (assumed)" : ""}. Travel perks may change this estimate.`;
   return (
-    <span className="block text-xs font-normal tabular-nums" title={title}>
+    <span className="block text-[11px] font-normal tabular-nums opacity-80" title={title}>
       {seconds > 0 ? `ETA ≈ ${duration}` : "Arrival due (est.)"}
     </span>
   );
