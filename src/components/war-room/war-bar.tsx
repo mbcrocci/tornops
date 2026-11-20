@@ -1,3 +1,4 @@
+import { decodeHTML } from "entities";
 import { useUserFactionData } from "@/hooks/use-torn";
 import { useNowSeconds } from "@/hooks/use-now";
 import type { Faction, FactionValue, War } from "@/lib/faction";
@@ -16,6 +17,7 @@ export function getCurrentWar(faction: Faction | undefined): CurrentWar | undefi
   if (!latest) return undefined;
   const sides = Object.entries(latest.factions).map(([id, value]) => ({
     ...value,
+    name: decodeHTML(value.name),
     id: Number(id),
   }));
   const us = sides.find((side) => side.id === faction.ID);

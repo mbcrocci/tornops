@@ -35,14 +35,14 @@ interface DataTableProps<TData, TValue> {
   getRowClassName?: (row: TData) => string | undefined;
   className?: string;
   /**
-   * Splits the rows into labelled sections while the table is sorted by `columnId`.
+   * Splits the rows into labelled sections, preserving the chosen sort within each section.
    * Pinned rows always form their own leading section.
    */
   grouping?: RowGrouping<TData>;
 }
 
 export type RowGrouping<TData> = {
-  columnId: string;
+  groupOrder: string[];
   getGroup: (row: TData) => string;
   renderHeader: (group: string, rows: TData[]) => ReactNode;
 };
@@ -114,9 +114,22 @@ export function DataTable<TData, TValue>({
     }
   });
 
-  const orderedRows = [...selectedRows, ...unselectedRows];
+  // Bucket already-sorted rows so grouping never depends on the active sort column.
+  // Keep the section order fixed and preserve the requested sort within each bucket.
+  const groups = new Map<string, typeof sortedRows>(
+    [PINNED_GROUP, ...(grouping?.groupOrder ?? [])].map((group) => [group, []]),
+  );
+  if (grouping) {
+    for (const row of sortedRows) {
+      const group = row.getIsSelected() ? PINNED_GROUP : grouping.getGroup(row.original);
+      const rows = groups.get(group) ?? [];
+      rows.push(row);
+      groups.set(group, rows);
+    }
+  }
+  const orderedRows = grouping ? [...groups.values()].flat() : [...selectedRows, ...unselectedRows];
 
-  const isGrouped = Boolean(grouping && sorting[0]?.id === grouping.columnId);
+  const isGrouped = Boolean(grouping);
   const groupOf = (row: (typeof orderedRows)[number]) =>
     row.getIsSelected() ? PINNED_GROUP : (grouping?.getGroup(row.original) ?? "");
   const groupRows = (group: string) =>

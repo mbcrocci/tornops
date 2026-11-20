@@ -355,7 +355,7 @@ function Roster({ members, side }: { members: FactionMember[]; side: RosterSide 
   const [showMore, setShowMore] = useState(secondaryActive > 0);
   const grouping = useMemo<RowGrouping<FactionMember>>(
     () => ({
-      columnId: "status",
+      groupOrder: ["ready", "hospital", "away"],
       getGroup: (member) => STATE_GROUP[member.status.state] ?? "away",
       renderHeader: (group, rows) => <GroupHeader group={group} rows={rows} side={side} />,
     }),
