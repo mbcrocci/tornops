@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { useUserData } from "@/hooks/use-torn";
 import { useCredentialsStore } from "@/lib/stores";
 import { SettingsSheet } from "@/components/settings";
+import { TornOpsLogo } from "@/components/tornops-logo";
 
 const links = [
   { to: "/", label: "War room", icon: Swords },
@@ -54,9 +55,16 @@ export default function Header() {
         className="mx-auto flex h-12 min-w-0 max-w-[1500px] flex-1 items-center gap-1 overflow-x-auto px-3 [mask-image:linear-gradient(to_right,black_55%,transparent_92%)] [scrollbar-width:none] sm:px-6 lg:[mask-image:none]"
         aria-label="Main navigation"
       >
-        <span className="mr-3 hidden font-mono text-xs font-bold tracking-[0.18em] sm:inline">
-          TORNOPS
-        </span>
+        <Link
+          to="/"
+          aria-label="TornOps home"
+          className="mr-3 flex shrink-0 items-center gap-2 rounded-md"
+        >
+          <TornOpsLogo className="text-primary" />
+          <span className="hidden font-mono text-xs font-bold tracking-[0.18em] sm:inline">
+            TORNOPS
+          </span>
+        </Link>
         {links.map(({ to, label, icon: Icon }) => (
           <Link
             key={to}
