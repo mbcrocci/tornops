@@ -13,12 +13,12 @@ import { formatDateTime, formatRespect } from "./format";
 const INITIAL_ROWS = 10;
 const PAGE_SIZE = 50;
 
-type Direction = "outgoing" | "incoming";
+type Direction = "outgoing" | "incoming" | "outside";
 type ResultFilter = "all" | ResultGroup;
 
 const RESULT_FILTERS: { value: ResultFilter; label: string }[] = [
   { value: "all", label: "All results" },
-  { value: "hit", label: "Scored" },
+  { value: "hit", label: "Successful" },
   { value: "failed", label: "Wasted" },
   { value: "assist", label: "Assists" },
 ];
@@ -26,10 +26,12 @@ const RESULT_FILTERS: { value: ResultFilter; label: string }[] = [
 export function AttackLog({
   outgoing,
   incoming,
+  outside = [],
   timeZone,
 }: {
   outgoing: FactionAttack[];
   incoming: FactionAttack[];
+  outside?: FactionAttack[];
   timeZone: string;
 }) {
   const [direction, setDirection] = useState<Direction>("outgoing");
@@ -37,7 +39,7 @@ export function AttackLog({
   const [search, setSearch] = useState("");
   const [visible, setVisible] = useState(INITIAL_ROWS);
   const query = search.trim().toLowerCase();
-  const rows = (direction === "outgoing" ? outgoing : incoming)
+  const rows = (direction === "outside" ? outside : direction === "outgoing" ? outgoing : incoming)
     .filter((attack) => resultFilter === "all" || resultGroup(attack) === resultFilter)
     .filter(
       (attack) =>
@@ -72,8 +74,9 @@ export function AttackLog({
                 reset();
               }}
             >
-              <ToggleGroupItem value="outgoing">Ours</ToggleGroupItem>
-              <ToggleGroupItem value="incoming">Theirs</ToggleGroupItem>
+              <ToggleGroupItem value="outgoing">Our war attacks</ToggleGroupItem>
+              <ToggleGroupItem value="incoming">Their war attacks</ToggleGroupItem>
+              <ToggleGroupItem value="outside">Our outside attacks</ToggleGroupItem>
             </ToggleGroup>
             <select
               aria-label="Result"

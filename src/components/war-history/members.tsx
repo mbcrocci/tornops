@@ -16,7 +16,6 @@ import { formatDuration, formatPercent, formatRespect, formatWindow } from "./fo
 type SortKey =
   | "reliability"
   | "hits"
-  | "failed"
   | "energy"
   | "xanax"
   | "chainWatch"
@@ -30,7 +29,6 @@ const SORTERS: Record<
 > = {
   reliability: (member) => member.reliableWindow?.confidence ?? 0,
   hits: (member) => member.hits,
-  failed: (member) => (member.attacks ? member.failed / member.attacks : 0),
   energy: (member) => member.energy,
   xanax: (member, armoryXanax) => armoryXanax?.get(member.id)?.total ?? 0,
   chainWatch: (member) => member.chainWatch?.share ?? 0,
@@ -106,6 +104,7 @@ function SortHeader({
   onSort,
   align = "left",
   title,
+  description,
 }: {
   label: string;
   sortKey: SortKey;
@@ -113,6 +112,7 @@ function SortHeader({
   onSort: (key: SortKey) => void;
   align?: "left" | "right";
   title?: string;
+  description?: string;
 }) {
   return (
     <th
@@ -131,6 +131,9 @@ function SortHeader({
         {label}
         {active === sortKey && <ArrowDown className="size-3" />}
       </button>
+      {description && (
+        <div className="mt-1 whitespace-nowrap text-[10px] font-normal">{description}</div>
+      )}
     </th>
   );
 }
@@ -149,7 +152,11 @@ export function MemberTable({
   const showFairFight = members.some((member) => member.fairFight !== null);
   const query = search.trim().toLowerCase();
   const rows = members
-    .filter((member) => member.attacks > 0 && member.name.toLowerCase().includes(query))
+    .filter(
+      (member) =>
+        (member.attacks > 0 || member.outside.attacks > 0) &&
+        member.name.toLowerCase().includes(query),
+    )
     .sort(
       (a, b) =>
         SORTERS[sortKey](b, armoryXanax) - SORTERS[sortKey](a, armoryXanax) || b.hits - a.hits,
@@ -196,8 +203,13 @@ export function MemberTable({
                 title="A cautious estimate that rewards being seen on many days, not one lucky day"
                 {...sortProps}
               />
-              <SortHeader label="Hits" sortKey="hits" {...sortProps} />
-              <SortHeader label="Wasted" sortKey="failed" {...sortProps} />
+              <SortHeader
+                label="Hits"
+                sortKey="hits"
+                description="war / outside / attempts"
+                title="Successful war hits / successful outside hits / total attempts, including failed attacks and assists in both categories. Sorted by war hits."
+                {...sortProps}
+              />
               <SortHeader
                 label="Energy"
                 sortKey="energy"
@@ -272,19 +284,17 @@ export function MemberTable({
                       "–"
                     )}
                   </td>
-                  <td className="px-3 py-2.5 font-mono tabular-nums">
-                    {member.hits}
-                    <span className="ml-1 text-[10px] text-muted-foreground">
-                      / {member.attacks}
-                    </span>
-                  </td>
                   <td
-                    className={cn(
-                      "px-3 py-2.5 font-mono tabular-nums",
-                      member.failed === 0 && "text-muted-foreground",
-                    )}
+                    className="whitespace-nowrap px-3 py-2.5 font-mono tabular-nums"
+                    title={`${member.hits} war hits · ${member.outside.hits} outside hits · ${member.attacks + member.outside.attacks} total attempts (${member.attacks} war, ${member.outside.attacks} outside)`}
                   >
-                    {member.failed}
+                    {member.hits}
+                    <span className="text-muted-foreground"> / </span>
+                    {member.outside.hits}
+                    <span className="text-muted-foreground">
+                      {" "}
+                      / {member.attacks + member.outside.attacks}
+                    </span>
                   </td>
                   <td className="px-3 py-2.5 text-right font-mono tabular-nums">
                     {member.energy.toLocaleString()}
@@ -409,8 +419,8 @@ export function AbsentMembers({
           <UserX className="size-4 text-destructive" /> No successful war hits
         </CardTitle>
         <p className="text-xs text-muted-foreground">
-          Current members without a single scoring hit in the selected wars. Join dates are
-          estimated from days in faction.
+          Current members without a scoring war hit. Outside hits are shown so supporting activity
+          is not mistaken for inactivity. Join dates are estimated from days in faction.
         </p>
       </CardHeader>
       <CardContent>
@@ -445,6 +455,7 @@ export function AbsentMembers({
                         </span>
                       </span>
                       <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                        {member.outsideHits > 0 && `${member.outsideHits} outside hits · `}
                         {member.hitsTaken > 0 && `hit ${member.hitsTaken}× · `}
                         {member.daysInFaction}d in faction
                       </span>

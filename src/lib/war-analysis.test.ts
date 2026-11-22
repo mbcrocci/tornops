@@ -86,6 +86,50 @@ function scheduleWindow(overrides: Partial<ScheduleWindow>): ScheduleWindow {
 }
 
 describe("analyzeWar", () => {
+  it("shows outside-only members without changing scoring or planning metrics", () => {
+    const options = {
+      outgoing: [attack(1, "2026-09-20T10:00:00Z", 10)],
+      incoming: [],
+      ranges: [range("2026-09-20T09:00:00Z", "2026-09-20T12:00:00Z")],
+      timeZone: "UTC",
+    };
+    const baseline = analyzeWar(options);
+    const result = analyzeWar({
+      ...options,
+      outside: [
+        attack(2, "2026-09-20T10:10:00Z", 11, { is_ranked_war: false }),
+        attack(3, "2026-09-20T10:20:00Z", 11, {
+          is_ranked_war: false,
+          result: "Lost",
+          respect_gain: 0,
+        }),
+        attack(4, "2026-09-20T10:30:00Z", 10, { is_ranked_war: false }),
+      ],
+    });
+    expect(result.totals).toEqual(baseline.totals);
+    expect(result.scheduleWindows).toEqual(baseline.scheduleWindows);
+    expect(result.hours).toEqual(baseline.hours);
+    expect(result.members.find((member) => member.id === 11)).toMatchObject({
+      attacks: 0,
+      hits: 0,
+      energy: 0,
+      reliableWindow: null,
+      outside: { attacks: 2, hits: 1, failed: 1, respect: 2 },
+    });
+    expect(result.members.find((member) => member.id === 10)).toMatchObject({
+      hits: 1,
+      outside: { hits: 1 },
+    });
+    expect(
+      findAbsentMembers(
+        [{ id: 11, name: "Outside hitter", position: "Member", daysInFaction: 100 }],
+        result.members,
+        options.ranges[0],
+        seconds("2026-09-21T00:00:00Z"),
+      ),
+    ).toMatchObject([{ id: 11, outsideHits: 1 }]);
+  });
+
   it("groups activity in the selected timezone", () => {
     const result = analyzeWar({
       outgoing: [attack(1, "2026-09-20T23:30:00Z", 10), attack(2, "2026-09-21T00:30:00Z", 11)],
@@ -235,6 +279,7 @@ describe("findAbsentMembers", () => {
         daysInFaction: 100,
         joined: "before",
         hitsTaken: 1,
+        outsideHits: 0,
       },
       {
         id: 11,
@@ -243,6 +288,7 @@ describe("findAbsentMembers", () => {
         daysInFaction: 2,
         joined: "after",
         hitsTaken: 0,
+        outsideHits: 0,
       },
     ]);
   });

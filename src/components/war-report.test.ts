@@ -54,7 +54,17 @@ describe("rankedWarsFromCache", () => {
       rankedWarsFromCache([
         {
           range: { id: 123, from: 1_758_340_800, to: 1_758_427_201 },
-          attacks: [cachedAttack],
+          attacks: [
+            attack(2, "2026-09-20T09:00:00Z", 10, {
+              defender: {
+                id: 30,
+                name: "Outside target",
+                level: 10,
+                faction: { id: 3, name: "Outside faction" },
+              },
+            }),
+            cachedAttack,
+          ],
         },
       ]),
     ).toEqual([

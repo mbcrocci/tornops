@@ -93,6 +93,7 @@ export type MemberBonuses = {
 };
 
 export type MemberSummary = {
+  outside: AttackTotals;
   id: number;
   name: string;
   attacks: number;
@@ -332,6 +333,7 @@ export function chainWatch(outgoing: FactionAttack[]): ChainWatch {
 export function analyzeWar({
   outgoing,
   incoming,
+  outside = [],
   ranges,
   timeZone,
 }: {
@@ -339,6 +341,7 @@ export function analyzeWar({
   incoming: FactionAttack[];
   ranges: WarRange[];
   timeZone: string;
+  outside?: FactionAttack[];
 }): WarAnalysis {
   const slotAt = createClock(timeZone);
 
@@ -410,6 +413,7 @@ export function analyzeWar({
     id: number;
     name: string;
     outgoing: FactionAttack[];
+    outside: FactionAttack[];
     hitsTaken: number;
     respectLost: number;
     slots: Set<string>;
@@ -422,6 +426,7 @@ export function analyzeWar({
       id,
       name,
       outgoing: [],
+      outside: [],
       hitsTaken: 0,
       respectLost: 0,
       slots: new Set<string>(),
@@ -483,6 +488,11 @@ export function analyzeWar({
     defender.respectLost += attack.respect_gain;
   }
 
+  // Outside activity is visible without changing war scoring or planning metrics.
+  for (const attack of outside) {
+    if (attack.attacker) member(attack.attacker.id, attack.attacker.name).outside.push(attack);
+  }
+
   const warDays = [...dayRows.keys()].sort();
   // For every start hour, the days on which the whole window fell inside a war.
   const windowSamples = Array.from({ length: 24 }, (_, startHour) =>
@@ -542,18 +552,20 @@ export function analyzeWar({
           },
         ];
       });
-      const reliableWindow = windows.length
-        ? windows.reduce((best, window) =>
-            window.confidence > best.confidence ||
-            (window.confidence === best.confidence && window.daysSeen > best.daysSeen)
-              ? window
-              : best,
-          )
-        : null;
+      const reliableWindow =
+        summary.outgoing.length && windows.length
+          ? windows.reduce((best, window) =>
+              window.confidence > best.confidence ||
+              (window.confidence === best.confidence && window.daysSeen > best.daysSeen)
+                ? window
+                : best,
+            )
+          : null;
 
       return {
         id: summary.id,
         name: summary.name,
+        outside: summarizeAttacks(summary.outside, []),
         attacks: totals.attacks,
         hits: totals.hits,
         failed: totals.failed,
@@ -660,6 +672,7 @@ export type RosterMember = { id: number; name: string; position: string; daysInF
 export type AbsentMember = RosterMember & {
   joined: "before" | "during" | "after";
   hitsTaken: number;
+  outsideHits: number;
 };
 
 // Current members with no successful war hit in the selection. Torn only reports whole
@@ -678,7 +691,12 @@ export function findAbsentMembers(
       const joinedAt = now - rosterMember.daysInFaction * 86_400;
       const joined: AbsentMember["joined"] =
         joinedAt <= selection.from ? "before" : joinedAt < selection.to ? "during" : "after";
-      return { ...rosterMember, joined, hitsTaken: byId.get(rosterMember.id)?.hitsTaken ?? 0 };
+      return {
+        ...rosterMember,
+        joined,
+        hitsTaken: byId.get(rosterMember.id)?.hitsTaken ?? 0,
+        outsideHits: byId.get(rosterMember.id)?.outside.hits ?? 0,
+      };
     })
     .sort((a, b) => order[a.joined] - order[b.joined] || a.name.localeCompare(b.name));
 }

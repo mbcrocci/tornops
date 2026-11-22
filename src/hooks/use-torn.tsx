@@ -258,7 +258,7 @@ const getFactionAttackHistory = async (
         rateLimitRetries = 0;
         completedUrls.add(requestUrl);
         for (const attack of data.attacks as FactionAttack[]) {
-          if (attack.is_ranked_war) warAttacks.set(attack.id, attack);
+          warAttacks.set(attack.id, attack);
         }
 
         const metadata = isRecord(data._metadata) ? data._metadata : null;
@@ -374,6 +374,7 @@ export const rankedWarsFromCache = (cachedWars: CachedWarData[]): FactionRankedW
   for (const { range, attacks } of cachedWars) {
     const factions = new Map<number, { id: number; name: string; score: number; chain: number }>();
     for (const attack of attacks) {
+      if (!attack.is_ranked_war) continue;
       for (const faction of [attack.attacker?.faction, attack.defender.faction]) {
         if (faction && !factions.has(faction.id)) {
           factions.set(faction.id, { ...faction, score: 0, chain: 0 });

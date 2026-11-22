@@ -7,6 +7,7 @@ export type WarAttackRange = { id: number; from: number; to: number };
 export type AttackDirection = "outgoing" | "incoming";
 
 type CachedWar = {
+  includesOutsideAttacks?: boolean;
   id: string;
   attacks: FactionAttack[];
 };
@@ -48,7 +49,10 @@ export async function readCachedWar(
       const record = await requestResult<CachedWar | undefined>(
         transaction.objectStore(STORE_NAME).get(cacheId(scope, range, direction)),
       );
-      return Array.isArray(record?.attacks) ? record.attacks : null;
+      // Older records only contain ranked-war attacks; fetch again for outside activity.
+      return record?.includesOutsideAttacks && Array.isArray(record.attacks)
+        ? record.attacks
+        : null;
     } finally {
       database.close();
     }
@@ -105,6 +109,7 @@ export async function writeCachedWar(
       });
       transaction.objectStore(STORE_NAME).put({
         id: cacheId(scope, range, direction),
+        includesOutsideAttacks: true,
         attacks,
       } satisfies CachedWar);
       await committed;

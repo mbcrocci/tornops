@@ -123,9 +123,13 @@ export function WarReport() {
     () => (attackQuery.data?.incoming ?? []).filter((attack) => attack.is_ranked_war),
     [attackQuery.data],
   );
+  const outside = useMemo(
+    () => (attackQuery.data?.attacks ?? []).filter((attack) => !attack.is_ranked_war),
+    [attackQuery.data],
+  );
   const analysis = useMemo(
-    () => analyzeWar({ outgoing, incoming, ranges: analysisRanges, timeZone }),
-    [outgoing, incoming, analysisRanges, timeZone],
+    () => analyzeWar({ outgoing, incoming, outside, ranges: analysisRanges, timeZone }),
+    [outgoing, incoming, outside, analysisRanges, timeZone],
   );
   const timeline = useMemo(
     () => respectTimeline(outgoing, incoming, analysisRanges),
@@ -206,8 +210,9 @@ export function WarReport() {
             War report
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Combine one or more ranked wars, including one in progress. Only ranked-war attacks
-            between your faction and the opponent are counted, in both directions.
+            Combine one or more ranked wars, including one in progress. Scoring war attacks are
+            counted in both directions. Outside attacks during the selected wars are shown
+            separately.
           </p>
         </div>
 
@@ -453,7 +458,12 @@ export function WarReport() {
 
               <Chains outgoing={outgoing} incoming={incoming} timeZone={timeZone} />
 
-              <AttackLog outgoing={outgoing} incoming={incoming} timeZone={timeZone} />
+              <AttackLog
+                outgoing={outgoing}
+                incoming={incoming}
+                outside={outside}
+                timeZone={timeZone}
+              />
             </>
           )}
         </div>
