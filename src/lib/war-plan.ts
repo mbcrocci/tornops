@@ -1,4 +1,4 @@
-import type { FFScouterMemberActivity } from "@/hooks/use-ffscouter";
+import type { FFScouterMemberActivity } from "@/lib/ffscouter";
 import type { ActivityHour } from "./activity-tracking";
 
 const HOUR = 3_600_000;
@@ -10,7 +10,7 @@ export type PlanMember = {
   id: number;
   name: string;
   level: number;
-  bs?: number;
+  bs?: number | undefined;
   state: string;
   until: number;
   description: string;

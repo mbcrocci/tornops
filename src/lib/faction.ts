@@ -42,8 +42,8 @@ export type StatusClass = {
   state: State;
   color: Color;
   until: number;
-  travel_type?: string;
-  plane_image_type?: string;
+  travel_type?: string | undefined;
+  plane_image_type?: string | undefined;
 };
 
 export type Color = "blue" | "green" | "red";

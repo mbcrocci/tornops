@@ -1,4 +1,4 @@
-import type { FFScouterData } from "@/hooks/use-ffscouter";
+import type { FFScouterData } from "@/lib/ffscouter";
 import type { StatusClass } from "./faction";
 
 export type Bounty = {
@@ -26,8 +26,8 @@ export type BountyTarget = {
 };
 
 export type BountyRow = BountyTarget & {
-  ffs?: FFScouterData;
-  status?: StatusClass;
+  ffs?: FFScouterData | undefined;
+  status?: StatusClass | undefined;
 };
 
 export type BountyFilters = {

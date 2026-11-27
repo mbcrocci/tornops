@@ -1,18 +1,16 @@
-import { create } from "zustand";
 import type { Faction } from "./faction";
 import { recordObservation } from "./activity-tracking";
-
-export const usePresenceHistoryState = create<{
-  revision: number;
-  errors: Record<number, string | undefined>;
-}>(() => ({ revision: 0, errors: {} }));
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
 // Called by existing faction requests. Saving history must never turn a successful
-// live faction response into a failed war room request.
-export async function observeFactionResponse(data: unknown, expectedId?: number): Promise<void> {
+// live faction response into a failed war room request, so a failure to save is returned
+// as a message instead. Resolves undefined when the history was saved or nothing was saved.
+export async function observeFactionResponse(
+  data: unknown,
+  expectedId?: number,
+): Promise<string | undefined> {
   if (
     !isRecord(data) ||
     data.error ||
@@ -30,21 +28,12 @@ export async function observeFactionResponse(data: unknown, expectedId?: number)
         !["Online", "Idle", "Offline"].includes(String(member.last_action.status)),
     )
   )
-    return;
+    return undefined;
   const faction = data as Faction;
   try {
     await recordObservation(faction, Date.now());
-    usePresenceHistoryState.setState((state) => ({
-      revision: state.revision + 1,
-      errors: { ...state.errors, [faction.ID]: undefined },
-    }));
+    return undefined;
   } catch (error) {
-    usePresenceHistoryState.setState((state) => ({
-      errors: {
-        ...state.errors,
-        [faction.ID]:
-          error instanceof Error ? error.message : "Activity could not be saved in this browser.",
-      },
-    }));
+    return error instanceof Error ? error.message : "Activity could not be saved in this browser.";
   }
 }

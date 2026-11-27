@@ -25,3 +25,7 @@ release. Add a tool name to select part of the graph. For example, run
 - [ ] If setup, runtime, or package-manager behavior looks wrong, run `vp env doctor` and include its output when asking for help.
 
 <!--VITE PLUS END-->
+
+# Effect UI
+
+The UI is built with `@effect/ui` and `@effect/ui-kit`. Read `node_modules/@effect/ui/AGENTS.md` before changing components; it matches the installed version. Both are installed from pkg.pr.new snapshots, pinned to one commit in `package.json` (with an `overrides` entry so ui-kit's peer resolves to the same snapshot). They need TypeScript 7 and `exactOptionalPropertyTypes`.

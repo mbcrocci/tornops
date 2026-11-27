@@ -1,4 +1,4 @@
-import type { FFScouterData } from "@/hooks/use-ffscouter";
+import type { FFScouterData } from "@/lib/ffscouter";
 import { attackCacheScope } from "@/lib/attack-history-cache";
 import { withTimeout } from "@/lib/utils";
 

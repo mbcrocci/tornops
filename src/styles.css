@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@import "./variants.css";
 @import "@fontsource-variable/jetbrains-mono";
 @import "@fontsource-variable/outfit";
 @import "@fontsource-variable/merriweather";

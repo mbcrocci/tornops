@@ -1,18 +1,12 @@
 import { defineConfig, lazyPlugins } from "vite-plus";
-import { devtools } from "@tanstack/devtools-vite";
-import viteReact from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
-import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import { fileURLToPath, URL } from "node:url";
 
 // https://vitejs.dev/config/
 export default defineConfig({
   staged: {
     "*": "vp check --fix",
-  },
-  fmt: {
-    ignorePatterns: ["src/routeTree.gen.ts"],
   },
   lint: {
     plugins: ["unicorn", "typescript", "oxc"],
@@ -154,7 +148,6 @@ export default defineConfig({
       builtin: true,
     },
     globals: {},
-    ignorePatterns: ["src/routeTree.gen.ts"],
     options: {
       typeAware: true,
       typeCheck: true,
@@ -173,15 +166,7 @@ export default defineConfig({
     // https://vitest.dev/guide/migration/#clearmocks-is-enabled-by-default
     clearMocks: false,
   },
-  plugins: lazyPlugins(() => [
-    devtools(),
-    tanstackRouter({
-      target: "react",
-      autoCodeSplitting: true,
-    }),
-    viteReact(),
-    tailwindcss(),
-  ]),
+  plugins: lazyPlugins(() => [tailwindcss()]),
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),

@@ -7,7 +7,7 @@ export type PlanMessageInput = {
   ours: number;
   theirs: number;
   theirStrength: number;
-  cap?: number;
+  cap?: number | undefined;
   targets: Target[];
   threats: PlanMember[];
   rally: PlanMember[];

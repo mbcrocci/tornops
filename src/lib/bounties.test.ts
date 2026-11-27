@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import type { FFScouterData } from "@/hooks/use-ffscouter";
+import type { FFScouterData } from "@/lib/ffscouter";
 import {
   type Bounty,
   createThrottle,

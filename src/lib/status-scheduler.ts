@@ -1,7 +1,18 @@
 import { statusRefetchDelay } from "./bounties";
 import type { StatusClass } from "./faction";
 
-type Entry = { status?: StatusClass; checkedAt: number; nextCheckAt: number; failed: boolean };
+type Entry = {
+  status?: StatusClass | undefined;
+  checkedAt: number;
+  nextCheckAt: number;
+  failed: boolean;
+};
+
+export type StatusSnapshot = {
+  statuses: Record<number, StatusClass>;
+  failed: number[];
+  checking: number[];
+};
 
 type Options = {
   fetchStatus: (playerId: number) => Promise<StatusClass>;
@@ -90,6 +101,17 @@ export class StatusScheduler {
   };
 
   getVersion = () => this.version;
+
+  /** Every status known so far, which checks failed, and which are running now. */
+  snapshot(): StatusSnapshot {
+    const statuses: Record<number, StatusClass> = {};
+    const failed: number[] = [];
+    for (const [playerId, entry] of this.entries) {
+      if (entry.status) statuses[playerId] = entry.status;
+      if (entry.failed) failed.push(playerId);
+    }
+    return { statuses, failed, checking: [...this.inFlight] };
+  }
 
   /** The next player to check: due priority players first, then the background. */
   next(): number | undefined {
